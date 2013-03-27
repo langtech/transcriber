@@ -7,6 +7,10 @@
 goog.provide('ldc.event.EventBus');
 
 /**
+ * EventBus is an event dispatcher. Objects register themselves with
+ * an EventBus for an interested event type. If that type of event enters
+ * the bus, the registered objects are notified.
+ *
  * @class EventBus
  * @constructor
  */
@@ -16,6 +20,8 @@ ldc.event.EventBus = function() {
 }
 
 /**
+ * Queue an event for propagation.
+ *
  * @method queue
  * @param {Event} event
  */
@@ -24,25 +30,29 @@ ldc.event.EventBus.prototype.queue = function(event) {
 
 	while (this.queued_events.length > 0) {
 		var event = this.queued_events.shift();
-		var handlers = this.handlers[event.type()];
-		for (var i=0; i < handlers.length; ++i) {
-			if (event.source() != handlers[i]) {
-				handlers[i].handleEvent(event);
+		var handlers = this.handlers[event.constructor];
+		if (handlers) {
+			for (var i=0; i < handlers.length; ++i) {
+				if (event.source() != handlers[i]) {
+					handlers[i].handleEvent(event);
+				}
 			}
 		}
 	}
 }
 
 /**
+ * Connect a handler to an event type.
+ *
  * @method connect
- * @param {String} eventType
+ * @param {Function} eventClass Constructor of an Event class.
  * @param {EventHandler} handler An object that implements a handleEvent()
  *   method.
  */
-ldc.event.EventBus.prototype.connect = function(eventType, handler) {
-	var handlers = this.handlers[eventType];
+ldc.event.EventBus.prototype.connect = function(eventClass, handler) {
+	var handlers = this.handlers[eventClass];
 	if (handlers == null) {
-		this.handlers[eventType] = handlers = [handler];
+		this.handlers[eventClass] = handlers = [handler];
 	}
 	else if (handlers.indexOf(handler) < 0) {
 		handlers.push(handler);
@@ -50,12 +60,20 @@ ldc.event.EventBus.prototype.connect = function(eventType, handler) {
 }
 
 /**
+ * Disconnect a handler from an event type.
+ *
  * @method disconnect
- * @param {String} eventType
+ * @param {Function} eventClass Constructor of an Event class.
  * @param {EventHandler} handler
  */
-ldc.event.EventBus.prototype.disconnect = function(eventType, handler) {
-
+ldc.event.EventBus.prototype.disconnect = function(eventClass, handler) {
+	var handlers = this.handlers[eventClass];
+	if (handlers != null) {
+		var idx = handlers.indexOf(handler);
+		if (idx >= 0) {
+			handlers.splice(idx, 1);
+		}
+	}
 }
 
 })();

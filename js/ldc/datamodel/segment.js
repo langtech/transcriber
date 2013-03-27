@@ -12,11 +12,11 @@ goog.provide('ldc.datamodel.Segment');
  * @class Segment
  * @constructor
  * @param {Table} table
- * @param {Number} row_i
+ * @param {Number} rid
  */
-ldc.datamodel.Segment = function(table, row_i) {
+ldc.datamodel.Segment = function(table, rid) {
 	this.table = table;
-	this.row_i = row_i;
+	this._rid = rid;
 }
 
 /**
@@ -24,12 +24,15 @@ ldc.datamodel.Segment = function(table, row_i) {
  * @param {String} field
  */
 ldc.datamodel.Segment.prototype.value = function(field) {
-	return this.table.getCell(this.row_i, field);
+	return this.table.getCell(this._rid, field);
 }
 
 /**
- * @method setUpdateCallback
- * @param {Fucntion} callback A function that is called when there's an
- *   update in the table.
+ * @method rid
+ * @return {Number}
  */
+ldc.datamodel.Segment.prototype.rid = function(field) {
+	return this._rid;
+}
+
 })();

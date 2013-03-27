@@ -12,6 +12,7 @@ files = [
   MOCHA_ADAPTER,
   'test/lib/chai.js',
   'js/closure-library/closure/goog/base.js',
+  'js/jquery-1.9.1.min.js',
   'js/ldc/**/*.js',
   'test/specs/**/*.js'
 ];

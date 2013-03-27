@@ -51,7 +51,7 @@
 			"file": "js/ldc/deps.js",
 			"settings":
 			{
-				"buffer_size": 813,
+				"buffer_size": 639,
 				"line_ending": "Unix"
 			}
 		},
@@ -59,7 +59,7 @@
 			"file": "js/ldc/datamodel/table.js",
 			"settings":
 			{
-				"buffer_size": 1925,
+				"buffer_size": 3102,
 				"line_ending": "Unix"
 			}
 		},
@@ -67,7 +67,7 @@
 			"file": "js/ldc/datamodel/segment.js",
 			"settings":
 			{
-				"buffer_size": 621,
+				"buffer_size": 477,
 				"line_ending": "Unix"
 			}
 		},
@@ -75,15 +75,15 @@
 			"file": "js/ldc/textdisplay/segmentedit.js",
 			"settings":
 			{
-				"buffer_size": 654,
+				"buffer_size": 991,
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "js/ldc/datamodel/segmentset.js",
+			"file": "js/ldc/textdisplay/textedit.js",
 			"settings":
 			{
-				"buffer_size": 792,
+				"buffer_size": 1831,
 				"line_ending": "Unix"
 			}
 		},
@@ -91,27 +91,35 @@
 			"file": "js/ldc/event/eventbus.js",
 			"settings":
 			{
-				"buffer_size": 1154,
+				"buffer_size": 1794,
 				"line_ending": "Unix",
 				"name": "eventbus.js"
 			}
 		},
 		{
-			"file": "test/specs/ldc.event.EventBus.spec.js",
+			"file": "test/specs/eventbus.spec.js",
 			"settings":
 			{
-				"buffer_size": 1874,
+				"buffer_size": 2245,
 				"line_ending": "Unix",
 				"name": "ldc.event.EventBus.spec.js"
 			}
 		},
 		{
-			"file": "js/ldc/event/event.js",
+			"file": "test/specs/datamodel.spec.js",
 			"settings":
 			{
-				"buffer_size": 1027,
+				"buffer_size": 1426,
 				"line_ending": "Unix",
-				"name": "event.js"
+				"name": "datamodel.spec.js"
+			}
+		},
+		{
+			"file": "js/ldc/event/events.js",
+			"settings":
+			{
+				"buffer_size": 2481,
+				"line_ending": "Unix"
 			}
 		}
 	],
@@ -139,6 +147,10 @@
 	},
 	"file_history":
 	[
+		"/Users/haejoong/work/transcriber/js/ldc/datamodel/segmentset.js",
+		"/Users/haejoong/work/transcriber/js/ldc/datamodel/segment.js",
+		"/Users/haejoong/work/transcriber/js/ldc/activemodel/activetable.js",
+		"/Users/haejoong/work/transcriber/js/ldc/event/event.js",
 		"/Users/haejoong/work/transcriber/js/deps.js",
 		"/Users/haejoong/work/webtrans/js/ldc/waveform/waveformbuffer.js",
 		"/Users/haejoong/work/webtrans/js/ldc/waveform/waveform.js",
@@ -176,9 +188,15 @@
 	},
 	"find_state":
 	{
-		"case_sensitive": false,
+		"case_sensitive": true,
 		"find_history":
 		[
+			"\n}",
+			"();",
+			"rowI",
+			"*/\n",
+			"sendEvent",
+			"row_i",
 			"hi",
 			"ihc",
 			"DO_ICC",
@@ -231,6 +249,8 @@
 		"regex": false,
 		"replace_history":
 		[
+			"rid",
+			"rowI"
 		],
 		"reverse": false,
 		"show_context": true,
@@ -241,7 +261,7 @@
 	"groups":
 	[
 		{
-			"selected": 8,
+			"selected": 10,
 			"sheets":
 			[
 				{
@@ -301,15 +321,15 @@
 					"file": "js/ldc/deps.js",
 					"settings":
 					{
-						"buffer_size": 813,
+						"buffer_size": 639,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								199,
-								199
+								423,
+								423
 							]
 						],
 						"settings":
@@ -328,15 +348,15 @@
 					"file": "js/ldc/datamodel/table.js",
 					"settings":
 					{
-						"buffer_size": 1925,
+						"buffer_size": 3102,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								411,
+								411
 							]
 						],
 						"settings":
@@ -345,7 +365,7 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 17.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -355,15 +375,15 @@
 					"file": "js/ldc/datamodel/segment.js",
 					"settings":
 					{
-						"buffer_size": 621,
+						"buffer_size": 477,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								315,
+								315
 							]
 						],
 						"settings":
@@ -381,15 +401,15 @@
 					"file": "js/ldc/textdisplay/segmentedit.js",
 					"settings":
 					{
-						"buffer_size": 654,
+						"buffer_size": 991,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								670,
+								670
 							]
 						],
 						"settings":
@@ -404,24 +424,23 @@
 				},
 				{
 					"buffer": 6,
-					"file": "js/ldc/datamodel/segmentset.js",
+					"file": "js/ldc/textdisplay/textedit.js",
 					"settings":
 					{
-						"buffer_size": 792,
+						"buffer_size": 1831,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								921,
+								921
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"translate_tabs_to_spaces": false
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -434,78 +453,107 @@
 					"file": "js/ldc/event/eventbus.js",
 					"settings":
 					{
-						"buffer_size": 1154,
+						"buffer_size": 1794,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								588,
-								588
+								882,
+								882
 							]
 						],
 						"settings":
 						{
 							"auto_name": "eventbus.js",
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 47.0,
+						"translation.y": 215.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 8,
-					"file": "test/specs/ldc.event.EventBus.spec.js",
+					"file": "test/specs/eventbus.spec.js",
 					"settings":
 					{
-						"buffer_size": 1874,
+						"buffer_size": 2245,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1867,
-								1867
+								77,
+								77
 							]
 						],
 						"settings":
 						{
 							"auto_name": "ldc.event.EventBus.spec.js",
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 437.0,
+						"translation.y": 427.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
 				},
 				{
 					"buffer": 9,
-					"file": "js/ldc/event/event.js",
+					"file": "test/specs/datamodel.spec.js",
 					"settings":
 					{
-						"buffer_size": 1027,
+						"buffer_size": 1426,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1011,
-								1011
+								924,
+								924
 							]
 						],
 						"settings":
 						{
-							"auto_name": "event.js",
+							"auto_name": "datamodel.spec.js",
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 212.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 10,
+					"file": "js/ldc/event/events.js",
+					"settings":
+					{
+						"buffer_size": 2481,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2481,
+								2481
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 135.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -546,7 +594,7 @@
 	"menu_visible": true,
 	"replace":
 	{
-		"height": 0.0
+		"height": 64.0
 	},
 	"save_all_on_build": true,
 	"select_file":

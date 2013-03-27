@@ -28,21 +28,21 @@ describe("EventBus", function() {
 			done();
 		}
 
-		eventbus.connect("some_event", event_source_one);
+		eventbus.connect(ldc.event.TestEvent, event_source_one);
 
-		var an_event = new ldc.event.Event("some_event", {}, event_source_two);
+		var an_event = new ldc.event.TestEvent(event_source_two);
 
 		eventbus.queue(an_event);
 	})
 
 	it("should NOT relay event to the sender", function(done) {
 		event_source_one.callback = function(event) {
-			throw "the event is relayed back to the sender";
+			throw "the event was relayed back to the sender";
 		}
 
-		eventbus.connect("some_event", event_source_one);
+		eventbus.connect(ldc.event.TestEvent, event_source_one);
 
-		var an_event = new ldc.event.Event("some_event", {}, event_source_one);
+		var an_event = new ldc.event.TestEvent(event_source_one);
 
 		eventbus.queue(an_event);
 
@@ -56,13 +56,13 @@ describe("EventBus", function() {
 			counter += 1;
 		}
 
-		eventbus.connect("some_event", event_source_one);
-		eventbus.connect("some_event", event_source_one);
-		eventbus.connect("some_event", event_source_one);
-		eventbus.connect("some_event", event_source_one);
-		eventbus.connect("some_event", event_source_one);
+		eventbus.connect(ldc.event.TestEvent, event_source_one);
+		eventbus.connect(ldc.event.TestEvent, event_source_one);
+		eventbus.connect(ldc.event.TestEvent, event_source_one);
+		eventbus.connect(ldc.event.TestEvent, event_source_one);
+		eventbus.connect(ldc.event.TestEvent, event_source_one);
 
-		var an_event = new ldc.event.Event("some_event", {}, event_source_two);
+		var an_event = new ldc.event.TestEvent(event_source_two);
 
 		eventbus.queue(an_event);
 
@@ -77,10 +77,10 @@ describe("EventBus", function() {
 			throw "event source is still connect to the event";
 		}
 
-		eventbus.connect("some_event", event_source_one);
-		eventbus.disconnect("some_event", event_source_one);
+		eventbus.connect(ldc.event.TestEvent, event_source_one);
+		eventbus.disconnect(ldc.event.TestEvent, event_source_one);
 
-		var an_event = new ldc.event.Event("some_event", {}, event_source_one);
+		var an_event = new ldc.event.TestEvent(event_source_two);
 
 		eventbus.queue(an_event);
 

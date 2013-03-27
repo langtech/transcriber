@@ -13,9 +13,11 @@ goog.provide('ldc.datamodel.TableRow');
  * 
  * @class Table
  * @constructor
- * @param {List} header A list of strings defining the names of the columns.
+ * @param {Array} header A list of strings defining the names of the columns.
+ * @param {EventBus} [eventBus]
  */
-ldc.datamodel.Table = function(header) {
+ldc.datamodel.Table = function(header, eventBus) {
+	this.ebus = eventBus;
 	// TODO: validate header
 	this.header = header;
 	this.rows = [];
@@ -26,6 +28,7 @@ ldc.datamodel.Table = function(header) {
  *
  * @method addRow
  * @param {Array} row An array of strings and numbers.
+ * @return {Number} Row id, a.k.a. rid.
  */
 ldc.datamodel.Table.prototype.addRow = function(row) {
 	var newrow = [];
@@ -35,6 +38,7 @@ ldc.datamodel.Table.prototype.addRow = function(row) {
 		newrow.push(v);
 	}
 	this.rows.push(newrow);
+	return this.rows.length - 1;
 }
 
 /**
@@ -50,8 +54,7 @@ ldc.datamodel.Table.prototype.find = function(field, value) {
 	var rows = [];
 	var idx = this.header.indexOf(field);
 	for (var i=0; i < this.rows.length; ++i) {
-		var row = this.rows[i];
-		if (row[idx] == value) {
+		if (this.rows[i][idx] == value) {
 			rows.push(i);
 		}
 	}
@@ -60,23 +63,66 @@ ldc.datamodel.Table.prototype.find = function(field, value) {
 
 /**
  * @method getRow
- * @param {Number} row_i Row index.
+ * @param {Number} rid Row index.
  * @return {Object}
  */
-ldc.datamodel.Table.prototype.getRow = function(row_i) {
-	return this._copy_row(this.rows[row_i]);
+ldc.datamodel.Table.prototype.getRow = function(rid) {
+	return this._copy_row(this.rows[rid]);
 }
 
 /**
  * @method getCell
- * @param {Number} row_i
+ * @param {Number} rid
  * @param {String} field
  * @return {String|Number}
  */
-ldc.datamodel.Table.prototype.getCell = function(row_i, field) {
+ldc.datamodel.Table.prototype.getCell = function(rid, field) {
 	var idx = this.header.indexOf(field);
-	return this.rows[row_i][idx];
+	return this.rows[rid][idx];
 }
+
+/**
+ * Update cells in a row.
+ *
+ * @method update
+ * @param {Update} update An Update object.
+ * @param {Boolean} sendEvent=true Whether or not broadcast the change.
+ */
+ldc.datamodel.Table.prototype.update = function(update, sendEvent) {
+	var rid = update.rid();
+	var row = this.rows[rid];
+	if (row) {
+		var cleaned_update = new ldc.datamodel.Update(rid);
+		var header = this.header;
+		update.each(function(k, v) {
+			// TODO: this is inefficient
+			var i = header.indexOf(k);
+			if (i >= 0) {
+				row[i] = v;
+				cleaned_update.set(k, v);
+			}
+		});
+
+		if (this.ebus && (sendEvent == null || sendEvent == true)) {
+			var e = new ldc.event.DataUpdateEvent(this, cleaned_update);
+			this.ebus.queue(e);
+		}
+	}
+}
+
+/**
+ * @method handleEvent
+ * @param {Event} event
+ */
+ldc.datamodel.Table.prototype.handleEvent = function(event) {
+	if (event.type() == ldc.event.DataUpdateEvent) {
+		var eargs = event.args();
+		if (eargs != null) {
+			this.update(eargs);
+		}
+	}
+}
+
 
 // private utilitty functions
 
