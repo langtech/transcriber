@@ -16,7 +16,7 @@ goog.addDependency(
 	["ldc.datamodel"],
 	["ldc.datamodel.Segment", "ldc.datamodel.Update"]);
 
-
+// text display module
 goog.addDependency(
 	"../../../ldc/textdisplay/segmentedit.js",
 	["ldc.textdisplay.SegmentEdit"],
@@ -25,6 +25,24 @@ goog.addDependency(
 	"../../../ldc/textdisplay/textedit.js",
 	["ldc.textdisplay.TextEdit"],
 	["ldc.textdisplay.SegmentEdit", "ldc.event.Event"]);
+
+// waveform display module
+goog.addDependency(
+	"../../../ldc/waveform/waveform.js",
+	["ldc.waveform.Waveform"],
+	[]);
+goog.addDependency(
+	"../../../ldc/waveform/waveformbuffer.js",
+	["ldc.waveform.WaveformBuffer"],
+	[]);
+goog.addDependency(
+	"../../../ldc/waveform/scrollbar.js",
+	["ldc.waveform.Scrollbar"],
+	["goog.ui.Slider", "goog.cssom"]);
+goog.addDependency(
+	"../../../ldc/waveform/index.js",
+	["ldc.waveform"],
+	["ldc.waveform.Waveform", "ldc.waveform.WaveformBuffer", "ldc.waveform.Scrollbar"]);
 
 // event module
 goog.addDependency(
