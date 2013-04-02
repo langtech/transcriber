@@ -46,6 +46,6 @@ jQuery(function($) {
 	goog.events.listen(xhr, goog.net.EventType.COMPLETE, function(e) {
 		setup_waveform(e.target.getResponse());
 	});
-	xhr.send('../data/test.shape');
+	xhr.send('test/data/test.shape');
 
 });
