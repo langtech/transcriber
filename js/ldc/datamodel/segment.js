@@ -1,5 +1,3 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule datamodel
@@ -34,5 +32,3 @@ ldc.datamodel.Segment.prototype.value = function(field) {
 ldc.datamodel.Segment.prototype.rid = function(field) {
 	return this._rid;
 }
-
-})();

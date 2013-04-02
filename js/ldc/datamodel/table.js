@@ -1,11 +1,10 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule datamodel
  */
 goog.provide('ldc.datamodel.Table');
-goog.provide('ldc.datamodel.TableRow');
+goog.require('ldc.datamodel.Update');
+goog.require('ldc.event.DataUpdateEvent');
 
 /**
  * Provides an interface for table-like data structure. Allows to add and
@@ -115,7 +114,7 @@ ldc.datamodel.Table.prototype.update = function(update, sendEvent) {
  * @param {Event} event
  */
 ldc.datamodel.Table.prototype.handleEvent = function(event) {
-	if (event.type() == ldc.event.DataUpdateEvent) {
+	if (event.constructor == ldc.event.DataUpdateEvent) {
 		var eargs = event.args();
 		if (eargs != null) {
 			this.update(eargs);
@@ -133,6 +132,3 @@ ldc.datamodel.Table.prototype._copy_row = function(row) {
 	}
 	return newrow;
 }
-
-
-})();

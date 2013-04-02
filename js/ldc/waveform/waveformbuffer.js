@@ -3,7 +3,7 @@
  * @submodule waveform
  * @namespace waveform
  */
-goog.provide("ldc.waveform.WaveformBuffer");
+goog.provide('ldc.waveform.WaveformBuffer');
 
 /**
  * A class for storing and serving waveform data samples for displaying.

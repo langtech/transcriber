@@ -5,19 +5,28 @@
  * @submodule waveform
  * @namespace waveform
  */
-goog.provide("ldc.waveform.Waveform");
+goog.provide('ldc.waveform.Waveform');
+goog.require('goog.array');
+goog.require('goog.dom');
 
 /**
- * A class for displaying WaveformBuffer on a canvas.
- * 
+ * A class for displaying WaveformBuffer on a canvas. After instantiation,
+ * display should be called before calling any other methods. For example,
+ * windowDuration() method would return null if display() hadn't been called
+ * before.
+ *
  * @class Waveform
  * @constructor
  * @param {WaveformBuffer} buffer
- * @param {Canvas} canvas A canvas object on the html page
+ * @param {HTMLCanvasElement} canvas A canvas object on the html page
  * @param {number} channel A channel of the buffer to display
  */
 ldc.waveform.Waveform = function(buffer, canvas, channel) {
     this.buffer = buffer;
+    /**
+     * @property {HTMLCanvasElement} canvas
+     * @protected
+     */
     this.canvas = canvas;
     this.channel = channel;
 
@@ -39,44 +48,67 @@ ldc.waveform.Waveform.prototype.canvasWidth = function() {
 
 /**
  * Returns the duration of the window.
+ *
  * @method windowDuration
- * @return {number} Duration of the window.
+ * @return {number} Duration of the window. Null if display() hasn't been
+ *    called with duration.
  */
 ldc.waveform.Waveform.prototype.windowDuration = function() {
-    return this.canvas.width * this._spx;
+    if (this._spx > 0) {
+        return this.canvas.width * this._spx;
+    }
 }
 
 /**
  * Returns the start time offset of the window.
  * @method windowStartTime
- * @return {number} Start time offset of the window.
+ * @return {number} Start time offset of the window. Null if display() hasn't
+ *    been called with duration.
  */
 ldc.waveform.Waveform.prototype.windowStartTime = function() {
-    return this._poff * this._spx;
+    if (this._spx > 0) {
+        return this._poff * this._spx;
+    }
 }
 
 /**
  * Finds the pixel index relative to current canvas given the time offset.
  * @method t2p
  * @param {number} t Time offset.
- * @return {number} Pixel index.
+ * @return {number} Pixel index. Null if display() hasn't been called with
+ *    duration.
  */
 ldc.waveform.Waveform.prototype.t2p = function(t) {
-    return Math.round(t / this._spx) - this._poff;
+    if (this._spx > 0) {
+        return Math.round(t / this._spx) - this._poff;
+    }
 }
 
 /**
  * Converts pixel offset into time offset.
  * @method p2t
  * @param {number} p Pixel offset.
- * @return {number} Time offset.
+ * @return {number} Time offset. Null if display() hasn't been called with
+ *    duration.
  */
 ldc.waveform.Waveform.prototype.p2t = function(p) {
-    return p * this._spx;
+    if (this._spx > 0) {
+        return p * this._spx;
+    }
 }
 
 /**
- * Displays waveform for the specified window.
+ * Return the length of the waveform in seconds.
+ *
+ * @method length
+ * @return {Number} Lenght of the waveform in seconds.
+ */
+ldc.waveform.Waveform.prototype.length = function() {
+    return this.buffer.len_t;
+}
+
+/**
+ * Display waveform at the specified time and duration.
  * 
  * @method display
  * @param {number} t Start time of the drawing window
@@ -85,10 +117,17 @@ ldc.waveform.Waveform.prototype.p2t = function(p) {
  */
 ldc.waveform.Waveform.prototype.display = function(t, dur) {
     var w = this.canvas.width;  // pixel width of the current window
-    if (dur === undefined) {
-        dur = w * this._spx;
+    if (w <= 0) {
+        return;  // no space to draw anything
     }
-    var pw = Math.round(dur / this._spx); // pixel width
+    if (dur == null) {
+        if (this._spx > 0) {
+            dur = w * this._spx;
+        }
+        else {
+            return; // SPX not defined yet
+        }
+    }
     
     var i = 0;  // pixel number to start filling from
     var n = w;  // number of pixels to fill
@@ -98,7 +137,7 @@ ldc.waveform.Waveform.prototype.display = function(t, dur) {
     var w1 = 0; // pixel width of the region to shift
     var x2 = 0; // destination pixel number of the shifted region
     
-    if (pw == w) {
+    if (Math.round(dur / this._spx) == w) { // SPX didn't change
         var poff = Math.round(t / this._spx); // pixel offset 
         if (poff == this._poff) {
             // No need to redraw -- same windows, same size
@@ -180,16 +219,19 @@ ldc.waveform.Waveform.prototype.moveWindow = function(t, anchor) {
     }
     if (anchor == 'beg') {
         this.display(t);
-    } else if (anchor == 'mid') {
-        this.display(t - this.canvas.width / 2 * this._spx);
-    } else if (anchor == 'end') {
-        this.display(t - this.canvas.width * this._spx);
+    }
+    else if (this._spx > 0) {
+        if (anchor == 'mid') {
+            this.display(t - this.canvas.width / 2 * this._spx);
+        } else if (anchor == 'end') {
+            this.display(t - this.canvas.width * this._spx);
+        }
     }
 }
 
 
 // Lengths between major ticks
-INTERVAL_SIZES = new Array(
+var INTERVAL_SIZES = new Array(
     0.000001, 0.000002, 0.000005,
     0.00001, 0.00002, 0.00005,
     0.0001, 0.0002, 0.0005,
@@ -203,7 +245,7 @@ INTERVAL_SIZES = new Array(
 );
 
 // Number of minor intervals between two major ticks
-NUM_MINOR_INTERVALS = new Array(
+var NUM_MINOR_INTERVALS = new Array(
     2, 2, 5,
     2, 2, 5,
     2, 2, 5,
@@ -217,19 +259,19 @@ NUM_MINOR_INTERVALS = new Array(
 );
 
 // Minimum major interval
-MIN_MAJOR_INTERVAL = 50;
+var MIN_MAJOR_INTERVAL = 50;
 
 // Major tick's height
-MAJOR_TICK_HEIGHT = 8;
+var MAJOR_TICK_HEIGHT = 8;
 
 // Minor tick's height
-MINOR_TICK_HEIGHT = 5;
+var MINOR_TICK_HEIGHT = 5;
 
 // FONT size
-FONT_SIZE = 10;
+var FONT_SIZE = 10;
 
 // Ruler height
-RULER_HEIGHT = MAJOR_TICK_HEIGHT + FONT_SIZE + 2;
+var RULER_HEIGHT = MAJOR_TICK_HEIGHT + FONT_SIZE + 2;
 
 /**
  * Draw a horizontal ruler in a region defined by the parameters.

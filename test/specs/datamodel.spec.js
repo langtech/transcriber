@@ -2,7 +2,7 @@ goog.require('ldc.datamodel.Table');
 
 var expect = chai.expect;
 
-describe("Table", function() {
+describe.skip("Table", function() {
 
 	var ebus, table, rid0, rid1;
 

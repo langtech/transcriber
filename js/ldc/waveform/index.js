@@ -5,4 +5,12 @@
  * @submodule waveform
  * @namespace waveform
  */
-goog.provide("ldc.waveform");
+goog.provide('ldc.waveform');
+goog.require('ldc.waveform.Waveform');
+goog.require('ldc.waveform.WaveformBuffer');
+goog.require('ldc.waveform.Scrollbar');
+goog.require('ldc.waveform.WaveformSet');
+goog.require('ldc.waveform.RichWaveform');
+goog.require('ldc.waveform.WaveformCursorEvent');
+goog.require('ldc.waveform.WaveformRegionEvent');
+goog.require('ldc.waveform.WaveformWindowEvent');

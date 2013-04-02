@@ -23,9 +23,9 @@ ldc.textdisplay.SegmentEdit = function(segment) {
 	var html_rid = make_html_id(rid);
 	var dom = goog.dom.getElement(html_rid);
 	if (dom == null) {
-		dom = goog.dom.createDom('div', {class:'segmentedit', id: html_rid},
+		dom = goog.dom.createDom('div', {'class':'segmentedit', id: html_rid},
 			goog.dom.createDom('div', {
-				class: 'segmentedit-textwidget',
+				'class': 'segmentedit-textwidget',
 				value: segment.value('message'),
 				contentEditable: 'true'
 			}, segment.value('message'))
@@ -98,7 +98,6 @@ ldc.textdisplay.SegmentEdit.prototype.getChange = function() {
 function make_html_id(rid) {
 	return "rid-" + rid;
 }
-ldc.textdisplay.SegmentEdit.makeHtmlId = make_html_id;
 
 /**
  * @method parseHtmlId
@@ -112,7 +111,6 @@ ldc.textdisplay.SegmentEdit.makeHtmlId = make_html_id;
 		return null;
 	}
 }
-ldc.textdisplay.SegmentEdit.parseHtmlId = parse_html_id;
 
 
 })();

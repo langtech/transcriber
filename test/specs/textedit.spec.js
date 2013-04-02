@@ -5,26 +5,30 @@ goog.require('goog.testing.events');
 
 var expect = chai.expect;
 
-describe("TextEdit", function() {
-	var ebus = new ldc.event.EventBus;
+describe.skip("TextEdit", function() {
+	var G = {}  // golbal context
 
-	var div = $('<div id="text"/>').appendTo('body');
-	var textedit = new ldc.textdisplay.TextEdit("text", ebus);
+	before(function() {
+		$('<div id="text"/>').appendTo('body');
+		G.ebus = new ldc.event.EventBus;
 
-	var table = new ldc.datamodel.Table(["start", "end", "message"], ebus);
-	var rid0 = table.addRow([1.0, 1.23, 'hello']);
-	var rid1 = table.addRow([1.89, 2.08, 'hi']);
-	var rid2 = table.addRow([3.55, 4.0, 'how are you']);
+		G.textedit = new ldc.textdisplay.TextEdit("text", G.ebus);
 
-	textedit.setTable(table);
-	ebus.connect(ldc.event.DataUpdateEvent, table);
-	ebus.connect(ldc.event.DataUpdateEvent, textedit);
+		G.table = new ldc.datamodel.Table(["start", "end", "message"], G.ebus);
+		G.rid0 = G.table.addRow([1.0, 1.23, 'hello']);
+		G.rid1 = G.table.addRow([1.89, 2.08, 'hi']);
+		G.rid2 = G.table.addRow([3.55, 4.0, 'how are you']);
+
+		G.textedit.setTable(G.table);
+		G.ebus.connect(ldc.event.DataUpdateEvent, G.table);
+		G.ebus.connect(ldc.event.DataUpdateEvent, G.textedit);		
+	})
 
 	it("should update data model when the view changes", function(done) {
 		var text = 'some random text ' + Math.random();
 
 		// find the event source (textarea element) and change the text
-		var se = textedit.findSegment(rid1);
+		var se = G.textedit.findSegment(G.rid1);
 		se.setText(text);
 
 		// emulate browser event
@@ -32,7 +36,7 @@ describe("TextEdit", function() {
 		goog.testing.events.fireBrowserEvent(e);
 
 		setTimeout(function() {
-			expect(table.getCell(rid1, 'message')).to.equal(text);
+			expect(G.table.getCell(G.rid1, 'message')).to.equal(text);
 			done();
 		}, 500);
 	})
@@ -40,12 +44,12 @@ describe("TextEdit", function() {
 	it("should update its view when data model changes", function(done) {
 		var text = 'some random text ' + Math.random();
 
-		table.update(new ldc.datamodel.Update(rid1, {
+		G.table.update(new ldc.datamodel.Update(G.rid1, {
 			message: text
 		}));
 
 		setTimeout(function() {
-			var se = textedit.findSegment(rid1);
+			var se = G.textedit.findSegment(G.rid1);
 			expect(se.text()).to.equal(text);
 			done();
 		}, 500);

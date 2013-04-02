@@ -13,7 +13,8 @@ files = [
   'test/lib/chai.js',
   'js/closure-library/closure/goog/base.js',
   'js/jquery-1.9.1.min.js',
-  'js/ldc/**/*.js',
+  'js/ldc/deps.js',
+  {pattern:'js/ldc/**/*.js', included:false},
   'test/specs/**/*.js'
 ];
 
