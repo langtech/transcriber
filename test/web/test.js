@@ -25,7 +25,7 @@ jQuery(function($) {
 	var player = $("#player").jPlayer({
 		ready: function() {
 			$(this).jPlayer('setMedia', {
-				oga: '/test/data/cts.ogg'
+				oga: '/transcriber/test/data/cts.ogg'
 			});
 			$('#play-btn').prop('disabled', false);
 		},
@@ -85,6 +85,6 @@ jQuery(function($) {
 	goog.events.listen(xhr, goog.net.EventType.COMPLETE, function(e) {
 		setup_waveform(e.target.getResponse());
 	});
-	xhr.send('../../test/data/cts.shape');
+	xhr.send('/transcriber/test/data/cts.shape');
 
 });
