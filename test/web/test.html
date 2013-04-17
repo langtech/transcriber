@@ -3,22 +3,52 @@
 <head>
 	<title>
 	</title>
-	<script src="/js/jquery-1.9.1.min.js"></script>
-	<script src="/js/closure-library/closure/goog/base.js"></script>
-	<script src="/js/ldc/deps.js"></script>
+	<link href="../../js/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+	<script src="../../js/jquery-1.9.1.min.js"></script>
+	<script src="../../js/jQuery.jPlayer.2.2.0/jquery.jplayer.min.js"></script>
+	<script src="../../js/closure-library/closure/goog/base.js"></script>
+	<script src="../../js/ldc/deps.js"></script>
 	<script src="test.js"></script>
 </head>
 <body>
-	<div>
-		<!-- waveform of the original recording -->
-		<canvas id="waveform"></canvas>
-		<div id="scrollbar"></div>
+	<div class="container-fluid">
+		<div class="span2"></div>
+		<div class="span10">
+
+
+			<div class="row-fluid">
+					<div class="span3">
+						<div class="btn-group">
+							<button id="play-btn" class="btn" disabled
+								data-play-text="Pause"
+								data-pause-text="Resume">Play</button>
+							<button id="stop-btn" class="btn" disabled>Stop</button>
+						</div>
+					</div>
+					<div class="span4">
+						<span id="pos"></span>
+					</div>
+			</div>
+
+			<br/>
+
+			<div class="row-fluid">
+				<div>
+					<!-- waveform of the original recording -->
+					<canvas id="waveform"></canvas>
+					<canvas id="waveform2"></canvas>
+					<div id="scrollbar"></div>
+				</div>
+			</div>
+
+			<br/>
+
+			<!-- the library will convert this to a text widget -->
+			<div id="textpanel"></div>
+		</div>
+
 	</div>
-
-	<br/>
-
-	<!-- the library will convert this to a text widget -->
-	<div id="textpanel"></div>
-
+	<div id="player"></div>
+	<script src="../../js/bootstrap/js/bootstrap.min.js"></script>
 </body>
 </html>

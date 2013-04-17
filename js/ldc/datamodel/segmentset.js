@@ -1,5 +1,3 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule datamodel
@@ -34,5 +32,3 @@ ldc.datamodel.SegmentSet.prototype.each = function(callback) {
 		callback(this.segments[i]);
 	}
 }
-
-})();

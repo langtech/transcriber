@@ -1,10 +1,9 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule event
  */
 goog.provide('ldc.event.Event');
+goog.provide('ldc.event.DataUpdateEvent');
 // Probably it's not necessary to list all the subclasses of the Event class.
 // The idea is that they all go with Event class, i.e. when someone requires
 // this module, he ends up requiring all subclasses of the Event class. Or,
@@ -104,5 +103,3 @@ ldc.event.DataUpdateEvent = function(source, update) {
 	goog.base(this, source, update);
 }
 goog.inherits(ldc.event.DataUpdateEvent, ldc.event.Event);
-
-})();

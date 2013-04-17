@@ -3,38 +3,32 @@
  * @submodule waveform
  * @namespace waveform
  */
-goog.provide("ldc.waveform.Scrollbar");
+goog.provide('ldc.waveform.Scrollbar');
+goog.require('goog.ui.Slider');
+goog.require('goog.cssom');
 
 /**
  * Turn an html element into a scrollbar widget for waveforms.
  * 
  * @class Scrollbar
  * @constructor
+ * @param {WaveformSet} waveformSet
  * @param {HTMLElement} element A div element to be converted to a scrollbar.
  */
-ldc.waveform.Scrollbar = function(element) {
+ldc.waveform.Scrollbar = function(waveformSet, element) {
 	this.element = element;
+	this.wset = waveformSet;
 
-	this.waveforms = new Array;
-	this.max_len_t = 0;
-	this.max_len_count = 0;
-	this.window_t = null;  // start time of current window
-	this.window_w = null;  // duration of the current window
 	this.widget = new goog.ui.Slider;
 	this.widget.decorate(this.element);
 	this.widget.setStep(0.000000001);
 
 	var sb = this;
 	var handler =  function(e) {
-		if (sb.waveforms.length == 0) {
-			return;
-		}
 		var p = sb.widget.getValue();
 		var m = sb.widget.getMaximum();
-		sb.window_t = (sb.max_len_t - sb.window_w) * p / m;
-		for (var i=0; i < sb.waveforms.length; ++i) {
-			sb.waveforms[i].moveWindow(sb.window_t);
-		}
+		var t = sb.wset.length() * p / m;
+		sb.wset.display(t);
 	}
 	
 	goog.events.listen(
@@ -57,66 +51,6 @@ ldc.waveform.Scrollbar = function(element) {
 		  height: 100%; \
 		} \
 	");
-}
-
-/**
- * Add a waveform to the managed waveform list. When the scrollbar changes the
- * position, managed waveforms are signaled to move to that position. Note
- * changes in a managed waveform is not propagated back to the scrollbar.
- *
- * @method addWaveform
- */
-ldc.waveform.Scrollbar.prototype.addWaveform = function(waveform) {
-	var idx = this.waveforms.indexOf(waveform);
-	if (idx < 0) {
-		this.waveforms.push(waveform);
-		if (this.window_t === null) {
-			this.window_t = waveform.windowStartTime();
-			this.window_w = waveform.windowDuration();
-		}
-		else {
-			waveform.display(this.window_t, this.window_w);
-		}
-		if (this.max_len_t < waveform.buffer.len_t) {
-			this.max_len_t = waveform.buffer.len_t;
-			this.max_len_count = 1;
-
-			var ww = parseInt(this.widget.getElement().style.width);
-			var w = this.window_w / this.max_len_t * ww;
-			w = Math.max(Math.min(w, ww), 10);
-			this.widget.getValueThumb().style.width = w + 'px';
-		}
-		else if (this.max_len_t == waveform.buffer.len_t) {
-			this.max_len_count += 1;
-		}
-	}
-}
-
-/**
- * @method removeWaveform
- */
-ldc.waveform.Scrollbar.prototype.removeWaveform = function(waveform) {
-	var idx = this.waveforms.indexOf(waveform);
-	if (idx >= 0) {
-		this.waveforms.splice(idx, 1);
-		if (waveform.buffer.len_t == this.max_len_t) {
-			this.max_len_count -= 1;
-			if (this.max_len_count <= 0) {
-				this.max_len_t = 0;
-				this.max_len_count = 0;
-				for (var i=0; i < this.waveforms.length; ++i) {
-					var t = this.waveforms[i].buffer.len_t;
-					if (t > this.max_len_t) {
-						this.max_len_t = t;
-						this.max_len_count = 1;
-					}
-					else if (t == this.max_len_t) {
-						this.max_len_count += 1;
-					}
-				}
-			}
-		}
-	}
 }
 
 /**
@@ -152,13 +86,13 @@ ldc.waveform.Scrollbar.prototype.width = function() {
  *   aligned with the center of the canvas.
  */
 ldc.waveform.Scrollbar.prototype.moveTo = function(t, anchor) {
-	var x = this.max_len_t - this.window_w;
+	var x = this.wset.length();
 	var n = t / x * this.widget.getMaximum();
-	if (anchor == "beg" || anchor === undefined) {
+	if (anchor == "beg" || anchor == null) {
 		this.widget.setValue(n);
 	}
 	else {
-		var w = this.window_w / x * this.widget.getMaximum();
+		var w = this.wset.windowDuration() / x * this.widget.getMaximum();
 		if (anchor == "mid") {
 			this.widget.setValue(n - w / 2);
 		}

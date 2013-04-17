@@ -1,5 +1,3 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule datamodel
@@ -69,5 +67,3 @@ ldc.datamodel.Update.prototype.each = function(callback) {
 		}
 	}
 }
-
-})();

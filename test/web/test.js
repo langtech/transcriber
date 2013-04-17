@@ -1,10 +1,42 @@
-goog.require('ldc.textdisplay.TextEdit');
-goog.require('ldc.event.EventBus');
-goog.require('ldc.waveform');
+goog.require('ldc');
 goog.require('goog.net.XhrIo');
 goog.require('goog.cssom');
 
 jQuery(function($) {
+
+	$('#play-btn').on('click', function(e) {
+		if ($(this).text() == 'Play' || $(this).text() == 'Resume') {
+			$('#player').jPlayer('play');
+			$(this).button('play');
+		}
+		else if ($(this).text() == 'Pause') {
+			$('#player').jPlayer('pause');
+			$(this).button('pause');
+		}
+		$('#stop-btn').prop('disabled', false);
+	});
+
+	$('#stop-btn').on('click', function() {
+		$('#player').jPlayer('stop');
+		$('#play-btn').button('reset');
+		$('#stop-btn').prop('disabled', true);
+	});
+
+	var player = $("#player").jPlayer({
+		ready: function() {
+			$(this).jPlayer('setMedia', {
+				oga: '/test/data/cts.ogg'
+			});
+			$('#play-btn').prop('disabled', false);
+		},
+		supplied: "oga",
+		timeupdate: function(e) {
+			var t = e.jPlayer.status.currentTime;
+			$('#pos').text(t);
+			waveform.updateRegion(region, t);
+		}
+	});
+
 
 	var ebus = new ldc.event.EventBus;
 	var table = new ldc.datamodel.Table(['start','end','message'], ebus);
@@ -30,14 +62,21 @@ jQuery(function($) {
 	function setup_waveform(raw_data) {
 		var buffer = new ldc.waveform.WaveformBuffer(raw_data);
 		var $canvas = $('#waveform');
+		var $canvas2 = $('#waveform2');
 		$canvas.attr('width', '500px');
 		$canvas.attr('height', '100px');
+		$canvas2.attr('width', '500px');
+		$canvas2.attr('height', '100px');
 		var $scrollbar = $('#scrollbar');
-		var waveform = new ldc.waveform.Waveform(buffer, $canvas[0], 0);
-		scrollbar = new ldc.waveform.Scrollbar($scrollbar[0]);
+		waveform = new ldc.waveform.RichWaveform(buffer, $canvas[0], 0);
+		waveform2 = new ldc.waveform.RichWaveform(buffer, $canvas2[0], 1);
+		var wset = new ldc.waveform.WaveformSet;
+		wset.addWaveform(waveform);
+		wset.addWaveform(waveform2);
+		wset.display(0, 30);
+		region = waveform.addRegion(0, 0);
+		scrollbar = new ldc.waveform.Scrollbar(wset, $scrollbar[0]);
 		scrollbar.setWidth(500);
-		scrollbar.addWaveform(waveform);
-		waveform.display(0, 3);
 	}
 
 	// download shape file and call setup_waveform()
@@ -46,6 +85,6 @@ jQuery(function($) {
 	goog.events.listen(xhr, goog.net.EventType.COMPLETE, function(e) {
 		setup_waveform(e.target.getResponse());
 	});
-	xhr.send('test/data/test.shape');
+	xhr.send('/test/data/cts.shape');
 
 });

@@ -1,5 +1,3 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule event
@@ -75,5 +73,3 @@ ldc.event.EventBus.prototype.disconnect = function(eventClass, handler) {
 		}
 	}
 }
-
-})();

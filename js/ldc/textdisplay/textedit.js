@@ -1,11 +1,11 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule textdisplay
  */
 goog.provide('ldc.textdisplay.TextEdit');
 goog.require('ldc.textdisplay.SegmentEdit');
+goog.require('ldc.datamodel.Segment');
+goog.require('ldc.event.Event');
 goog.require('goog.dom');
 goog.require('goog.events');
 
@@ -18,7 +18,7 @@ goog.require('goog.events');
  */
 ldc.textdisplay.TextEdit = function(id, eventBus, segFilter) {
 	this.ebus = eventBus;
-	this.container = goog.dom.createDom('div', {class:'textedit'});
+	this.container = goog.dom.createDom('div', {'class':'textedit'});
 	goog.dom.append(goog.dom.getElement(id), this.container);
 
 	var that = this;
@@ -72,5 +72,3 @@ ldc.textdisplay.TextEdit.prototype.handleEvent = function(event) {
 		se.setText(u.get('message'));
 	}
 }
-
-})();
