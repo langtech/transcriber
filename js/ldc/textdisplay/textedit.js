@@ -66,7 +66,7 @@ ldc.textdisplay.TextEdit.prototype.setTable = function(table) {
  * @param {Event}
  */
 ldc.textdisplay.TextEdit.prototype.handleEvent = function(event) {
-	if (event.type() == ldc.event.DataUpdateEvent) {
+	if (event.constructor == ldc.event.DataUpdateEvent) {
 		var u = event.args();  // update object
 		var se = this.findSegment(u.rid());
 		se.setText(u.get('message'));

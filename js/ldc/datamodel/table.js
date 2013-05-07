@@ -114,7 +114,7 @@ ldc.datamodel.Table.prototype.update = function(update, sendEvent) {
  * @param {Event} event
  */
 ldc.datamodel.Table.prototype.handleEvent = function(event) {
-	if (event.type() == ldc.event.DataUpdateEvent) {
+	if (event.constructor == ldc.event.DataUpdateEvent) {
 		var eargs = event.args();
 		if (eargs != null) {
 			this.update(eargs);

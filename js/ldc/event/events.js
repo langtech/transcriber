@@ -13,8 +13,8 @@ goog.provide('ldc.event.DataUpdateEvent');
 /**
  * @class Event
  * @constructor
- * @param {Object} args Data associated with the event.
  * @param {Object} source Object that is the source of the event.
+ * @param {Object} args Data associated with the event.
  */
 ldc.event.Event = function(source, args) {
 	/**
@@ -45,6 +45,29 @@ ldc.event.Event = function(source, args) {
 }
 
 /**
+ * @method newTypeId
+ * @static
+ * @protected
+ * @return {Number} Unique ID
+ */
+ ldc.event.Event.newTypeId = function() {
+ 	if (ldc.event.Event.next_type_id == null) {
+ 		ldc.event.Event.next_type_id = 0;
+ 	}
+ 	return ldc.event.Event.next_type_id++;
+ }
+
+/**
+ * A unique identifier for the event type.
+ * @property type
+ * @static
+ */
+ldc.event.Event.type = ldc.event.Event.newTypeId();
+
+
+/**
+ * Returns a unique ID of this event.
+ *
  * @method id
  * @return {Number} A unique event ID.
  */
@@ -53,6 +76,8 @@ ldc.event.Event.prototype.id = function() {
 }
 
 /**
+ * Returns the argument of the event.
+ *
  * @method args
  * @return {Object}
  */
@@ -61,19 +86,13 @@ ldc.event.Event.prototype.args = function() {
 }
 
 /**
+ * Returns the object that created this event.
+ *
  * @method source
  * @return {Object}
  */
 ldc.event.Event.prototype.source = function() {
 	return this._source;
-}
-
-/**
- * @method type
- * @return {Function} The constructor, therefore, the type of this object.
- */
-ldc.event.Event.prototype.type = function() {
-	return this.constructor;
 }
 
 /**
@@ -86,6 +105,8 @@ ldc.event.TestEvent = function(source) {
 	goog.base(this, source);
 }
 goog.inherits(ldc.event.TestEvent, ldc.event.Event);
+
+ldc.event.TestEvent.type = ldc.event.Event.newTypeId();
 
 /**
  * An event where there has been a change in the "data model". For example,
@@ -103,3 +124,6 @@ ldc.event.DataUpdateEvent = function(source, update) {
 	goog.base(this, source, update);
 }
 goog.inherits(ldc.event.DataUpdateEvent, ldc.event.Event);
+
+ldc.event.DataUpdateEvent.type = ldc.event.Event.newTypeId();
+

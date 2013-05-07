@@ -14,9 +14,10 @@ goog.addDependency('../../../ldc/mediaplayer/index.js', ['ldc.mediaplayer'], ['l
 goog.addDependency('../../../ldc/textdisplay/index.js', ['ldc.textdisplay'], ['ldc.textdisplay.SegmentEdit', 'ldc.textdisplay.TextEdit']);
 goog.addDependency('../../../ldc/textdisplay/segmentedit.js', ['ldc.textdisplay.SegmentEdit'], ['goog.dom', 'ldc.datamodel.Update']);
 goog.addDependency('../../../ldc/textdisplay/textedit.js', ['ldc.textdisplay.TextEdit'], ['goog.dom', 'goog.events', 'ldc.datamodel.Segment', 'ldc.event.Event', 'ldc.textdisplay.SegmentEdit']);
-goog.addDependency('../../../ldc/waveform/index.js', ['ldc.waveform'], ['ldc.waveform.RichWaveform', 'ldc.waveform.Scrollbar', 'ldc.waveform.Waveform', 'ldc.waveform.WaveformBuffer', 'ldc.waveform.WaveformSet']);
-goog.addDependency('../../../ldc/waveform/richwaveform.js', ['ldc.waveform.RichWaveform'], ['goog.dom', 'ldc.waveform.Waveform']);
-goog.addDependency('../../../ldc/waveform/scrollbar.js', ['ldc.waveform.Scrollbar'], ['goog.cssom', 'goog.ui.Slider']);
+goog.addDependency('../../../ldc/waveform/events.js', ['ldc.waveform.WaveformCursorEvent', 'ldc.waveform.WaveformRegionEvent', 'ldc.waveform.WaveformWindowEvent'], ['ldc.event.Event']);
+goog.addDependency('../../../ldc/waveform/index.js', ['ldc.waveform'], ['ldc.waveform.RichWaveform', 'ldc.waveform.Scrollbar', 'ldc.waveform.Waveform', 'ldc.waveform.WaveformBuffer', 'ldc.waveform.WaveformCursorEvent', 'ldc.waveform.WaveformRegionEvent', 'ldc.waveform.WaveformSet', 'ldc.waveform.WaveformWindowEvent']);
+goog.addDependency('../../../ldc/waveform/richwaveform.js', ['ldc.waveform.RichWaveform'], ['goog.dom', 'goog.events', 'goog.object', 'goog.style', 'ldc.event', 'ldc.waveform.Waveform']);
+goog.addDependency('../../../ldc/waveform/scrollbar.js', ['ldc.waveform.Scrollbar'], ['goog.cssom', 'goog.ui.Slider', 'ldc.waveform.WaveformWindowEvent']);
 goog.addDependency('../../../ldc/waveform/waveform.js', ['ldc.waveform.Waveform'], ['goog.array', 'goog.dom']);
 goog.addDependency('../../../ldc/waveform/waveformbuffer.js', ['ldc.waveform.WaveformBuffer'], []);
 goog.addDependency('../../../ldc/waveform/waveformset.js', ['ldc.waveform.WaveformSet'], []);

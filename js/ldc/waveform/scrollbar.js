@@ -4,6 +4,7 @@
  * @namespace waveform
  */
 goog.provide('ldc.waveform.Scrollbar');
+goog.require('ldc.waveform.WaveformWindowEvent');
 goog.require('goog.ui.Slider');
 goog.require('goog.cssom');
 
@@ -14,25 +15,30 @@ goog.require('goog.cssom');
  * @constructor
  * @param {WaveformSet} waveformSet
  * @param {HTMLElement} element A div element to be converted to a scrollbar.
+ * @param {EventBus} [ebus]
  */
-ldc.waveform.Scrollbar = function(waveformSet, element) {
+ldc.waveform.Scrollbar = function(waveformSet, element, ebus) {
 	this.element = element;
 	this.wset = waveformSet;
 
 	this.widget = new goog.ui.Slider;
 	this.widget.decorate(this.element);
-	this.widget.setStep(0.000000001);
+	this.thumb = this.widget.getValueThumb();
+	this.issue_event = true; // whether to issue the window move event
 
-	var sb = this;
-	var handler =  function(e) {
-		var p = sb.widget.getValue();
-		var m = sb.widget.getMaximum();
-		var t = sb.wset.length() * p / m;
-		sb.wset.display(t);
+	goog.events.listen(this.widget, 'change', function(e) {
+		if (ebus && this.issue_event) {
+			var p = this.widget.getValue();
+			var m = this.widget.getMaximum();
+			var t = this.wset.length() * p / m;
+			ebus.queue(new ldc.waveform.WaveformWindowEvent(this, t));
+		}
+	}, false, this);
+
+	this.ebus = ebus;
+	if (ebus) {
+		ebus.connect(ldc.waveform.WaveformWindowEvent, this);
 	}
-	
-	goog.events.listen(
-		this.widget, goog.ui.Component.EventType.CHANGE, handler, false);
 
 	goog.cssom.addCssText(" \
 		.goog-slider-horizontal { \
@@ -47,10 +53,12 @@ ldc.waveform.Scrollbar = function(waveformSet, element) {
 		  position: absolute; \
 		  overflow: hidden; \
 		  top: 0; \
-		  width: 20px; \
 		  height: 100%; \
 		} \
 	");
+
+	var w = this.wset.windowDuration() / this.wset.length() * this.element.clientWidth;
+	this.thumb.style.width = Math.round(Math.max(5,w)) + 'px';
 }
 
 /**
@@ -87,17 +95,41 @@ ldc.waveform.Scrollbar.prototype.width = function() {
  */
 ldc.waveform.Scrollbar.prototype.moveTo = function(t, anchor) {
 	var x = this.wset.length();
-	var n = t / x * this.widget.getMaximum();
+	var max = this.widget.getMaximum();
+
 	if (anchor == "beg" || anchor == null) {
-		this.widget.setValue(n);
+		var v = t / x * max;
+		this.widget.setValue(Math.min(100, Math.round(v)));
 	}
 	else {
-		var w = this.wset.windowDuration() / x * this.widget.getMaximum();
 		if (anchor == "mid") {
-			this.widget.setValue(n - w / 2);
+			var dur = this.wset.windowDuration();
+			var v = (t - dur / 2) / x * max;
+			this.widget.setValue(Math.min(100, Math.round(v)));
 		}
 		else if (anchor == "end") {
-			this.widget.setValue(n - w);
+			var dur = this.wset.windowDuration();
+			var v = (t - dur) / x * max;
+			this.widget.setValue(Math.min(100, Math.round(v)));
 		}
+	}
+}
+
+/**
+ *
+ * @method handleEvent
+ */
+ldc.waveform.Scrollbar.prototype.handleEvent = function(e) {
+	if (e.constructor == ldc.waveform.WaveformWindowEvent) {
+		var a = e.args();
+		if (a.dur) {
+			var x = this.wset.length();
+			var w = a.dur / x * this.element.clientWidth;
+			this.thumb.style.width =  Math.round(w) + 'px';
+		}
+
+		this.issue_event = false;
+		this.moveTo(e.args().beg);
+		this.issue_event = true;
 	}
 }

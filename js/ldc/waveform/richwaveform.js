@@ -1,3 +1,5 @@
+(function() {
+
 /**
  * @module ldc
  * @submodule waveform
@@ -5,12 +7,20 @@
  */
 goog.provide('ldc.waveform.RichWaveform');
 goog.require('ldc.waveform.Waveform');
+goog.require('ldc.event');
 goog.require('goog.dom');
 goog.require('goog.style');
 goog.require('goog.object');
+goog.require('goog.events');
 
 /**
- * Waveform with a cursor and a region for markup.
+ * Waveform with regions on top of it. Regions are added using the addRegion
+ * method. It has a cursor that follows mouse movement, which also updates
+ * its position upon receiving WaveformCursorEvent. It also has a default
+ * region called 'selection' that is updated when user uses mouse to mark a
+ * region or when it receives WaveformRegionEvent.
+ *
+ * Generates and listens on MouseMoveEvent.
  *
  * @class RichWaveform
  * @extends waveform.Waveform
@@ -18,10 +28,13 @@ goog.require('goog.object');
  * @param {WaveformBuffer} buffer
  * @param {Canvas} canvas A canvas object on the html page
  * @param {number} channel A channel of the buffer to display
+ * @param {EventBus} [ebus] An EventBus object for sending and receiving
+ *     mouse events.
  */
-ldc.waveform.RichWaveform = function(buffer, canvas, channel) {
+ldc.waveform.RichWaveform = function(buffer, canvas, channel, ebus) {
 	goog.base(this, buffer, canvas, channel);
 
+	// wrap the canvas element
 	this.container = goog.dom.createElement('div');
 	this.container.style.position = 'relative';
 	goog.dom.insertSiblingAfter(this.container, canvas);
@@ -35,6 +48,34 @@ ldc.waveform.RichWaveform = function(buffer, canvas, channel) {
 	//    dur   - length of the region in seconds
 	//    color - color of the region
 	//    alpha - transparency (client has no control on this)
+
+	this.cursor_id = this.addRegion(0, 0);
+	this.selection_id = this.addRegion(0, 0, null, 0); // initially hidden
+
+	// There are two classes of selections: primary and secondary. If the
+	// user action on selection originates from this waveform, the selection
+	// is primary. The selection if secondary otherwise. Usually, primary
+	// selection has more intense color, and secondary is rendered with a
+	// lighter color.
+	this.selection_color = {
+		'primary': 'red',
+		'secondary': 'red'
+	};
+	this.selection_alpha = {
+		'primary': 0.4,
+		'secondary': 0.05
+	};
+
+	// listen on waveform events
+	this.ebus = ebus;
+	if (ebus != null) {
+		ebus.connect(ldc.waveform.WaveformCursorEvent, this);
+		ebus.connect(ldc.waveform.WaveformRegionEvent, this);
+		ebus.connect(ldc.waveform.WaveformWindowEvent, this);
+	}
+
+	// listen on mouse event so that we animate cursor and selection.
+	this.setup_mouse_events_();
 }
 goog.inherits(ldc.waveform.RichWaveform, ldc.waveform.Waveform);
 
@@ -43,27 +84,32 @@ goog.inherits(ldc.waveform.RichWaveform, ldc.waveform.Waveform);
  * @param {Number} t Start position of the region in seconds.
  * @param {Number} [dur=0]
  * @param {String} [color=red]
+ * @param {Number} [transparency=0.4]
  * @return {String} A unique ID for the region.
  */
-ldc.waveform.RichWaveform.prototype.addRegion = function(t, dur, color)
-{
+ldc.waveform.RichWaveform.prototype.addRegion = function(t, dur, color, transparency) {
 	var div = goog.dom.createElement('div');
 	goog.dom.appendChild(this.container, div);
-
-	var region = {
-		html: div,
-		pos: t,
-		dur: dur==null ? 0 : dur,
-		color: color==null ? 'red' : color,
-		alpha: 0.4
-	}
+	goog.events.listen(div, 'dragstart', function(e) {
+		e.preventDefault();
+	});
 
 	var id = Math.random() + '';
 	while (this.regions.hasOwnProperty(id)) {
 		id = Math.random() + '';
 	}
+
+	var region = {
+		id: id,
+		html: div,
+		pos: t,
+		dur: dur==null || dur < 0 ? 0 : dur,
+		color: color==null ? 'red' : color,
+		alpha: transparency==null ? 0.4 : transparency
+	}
+
 	this.regions[id] = region;
-	this.renderRegion_(region);
+	this.render_region_(region);
 	return id;
 }
 
@@ -75,23 +121,64 @@ ldc.waveform.RichWaveform.prototype.addRegion = function(t, dur, color)
  * @param {Number} [t] New position in seconds. No change if null.
  * @param {Number} [dur] New size of the region in seconds. No change if null.
  * @param {String} [color] New color of the region.
+ * @param {Number} [transparency] New transparency of the region.
  */
-ldc.waveform.RichWaveform.prototype.updateRegion = function(id, t, dur, color) {
+ldc.waveform.RichWaveform.prototype.updateRegion = function(id, t, dur, color, transparency) {
 	if (this.regions.hasOwnProperty(id)) {
 		var r = this.regions[id];
+		var has_change = false;
 		if (t != null) {
+			if (this.t2p(r.pos) != this.t2p(t)) {
+				has_change = true;
+			}
 			r.pos = t;
 		}
-		if (dur != null) {
+		if (dur != null && r.dur != dur) {
 			r.dur = dur;
+			has_change = true;
 		}
-		if (color != null) {
+		if (color != null && r.color != color) {
 			r.color = color;
+			has_change = true;
 		}
-		if (t != null || dur != null || color != null) {
-			this.renderRegion_(r);
+		if (transparency != null && r.alpha != transparency) {
+			r.alpha = transparency;
+			has_change = true;
+		}
+		if (has_change) {
+			this.render_region_(r);
 		}
 	}
+}
+
+/**
+ * Get a Region object associated with the given ID.
+ *
+ * @method getRegion
+ * @param {Number|String} id This must be the value returned by addRegion.
+ * @return {Region} A Region object on success. Null otherwise.
+ */
+ldc.waveform.RichWaveform.prototype.getRegion = function(id) {
+	if (this.regions.hasOwnProperty(id)) {
+		var r = this.regions[id];
+		return new Region(r);
+	}
+}
+
+/**
+ * @method getCursor
+ * @return {Region} A Region object representing the cursor.
+ */
+ldc.waveform.RichWaveform.prototype.getCursor = function() {
+	return this.getRegion(this.cursor_id);
+}
+
+/**
+ * @method getSelection
+ * @return {Region} A Region object representing the region.
+ */
+ldc.waveform.RichWaveform.prototype.getRegion = function() {
+	return this.getRegion(this.selection_id);
 }
 
 /**
@@ -103,13 +190,52 @@ ldc.waveform.RichWaveform.prototype.updateRegion = function(id, t, dur, color) {
  *   If not set, current window duration is kept.
  */
 ldc.waveform.RichWaveform.prototype.display = function(t, dur) {
+	var old_dur = this.windowDuration();
 	var ret = goog.base(this, 'display', t, dur);
-	goog.object.every(this.regions, this.renderRegion_, this);
+	goog.object.every(this.regions, function(r) {
+		this.render_region_(r);
+		return true; // if false, every() stops iterating
+	}, this);
+
+	if (this.ebus) {
+		var d = this.windowDuration();
+		if (old_dur != d) {
+			var e = new ldc.waveform.WaveformWindowEvent(this, t, d);
+			this.ebus.queue(e);
+		}
+	}
 	return ret;
 }
 
-// Private method for rendering a region object.
-ldc.waveform.RichWaveform.prototype.renderRegion_ = function(r) {
+
+/**
+ * Handle events. This is a part of the EventBus framework. EventBus expects
+ * this method to exist for subscribed event receiving objects.
+ *
+ * @method handleEvent
+ * @param {Event} e Event object.
+ */
+ldc.waveform.RichWaveform.prototype.handleEvent = function(e) {
+	if (e.constructor == ldc.waveform.WaveformCursorEvent) {
+		this.updateRegion(this.cursor_id, e.args());
+	}
+	else if (e.constructor == ldc.waveform.WaveformRegionEvent) {
+		var arg = e.args();
+		this.update_selection_('secondary', arg.beg, arg.dur);
+	}
+	else if (e.constructor == ldc.waveform.WaveformWindowEvent) {
+		var arg = e.args();
+		this.display(arg.beg, arg.end);
+	}
+}
+
+/**
+ * Render region object.
+ * @private
+ * @method render_region_
+ * @param {Object} r A region object.
+ */
+ldc.waveform.RichWaveform.prototype.render_region_ = function(r) {
 	var x = this.t2p(r.pos);
 	var y = this.t2p(r.pos + r.dur);
 	if (y < 0 || x >= this.canvas.width) {
@@ -132,3 +258,86 @@ ldc.waveform.RichWaveform.prototype.renderRegion_ = function(r) {
 		r.html.style.display = 'block';
 	}
 }
+
+/**
+ * Update selection.
+ * @private
+ * @method update_selection_
+ * @param {String} klass Either 'primary' or 'secondary'.
+ * @param {Number} beg
+ * @param {Number} dur 
+ */
+ ldc.waveform.RichWaveform.prototype.update_selection_ = function(klass, beg, dur) {
+		var color = this.selection_color[klass];
+		var alpha = this.selection_alpha[klass];
+		this.updateRegion(this.selection_id, beg, dur, color, alpha);
+	};
+
+/**
+ * Set up mouse events for updating cursor and selection.
+ * @private
+ * @method setup_mouse_events_
+ */
+ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
+	// listen on mouse events
+	var mousedown = false;
+	var selection_anchor = 0;
+
+	goog.events.listen(document.body, 'mousemove', function(e) {
+		var e1 = this.container.getBoundingClientRect();
+		var e2 = e.target.getBoundingClientRect();
+		var x = e2.left - e1.left + e.offsetX;
+		var t = this.p2t(x) + this.windowStartTime();
+		// update selection
+		if (mousedown) {
+			var beg = Math.min(t, selection_anchor);
+			var dur = Math.max(t, selection_anchor) - beg;
+			this.update_selection_('primary', beg, dur);
+			if (this.ebus) {
+				this.ebus.queue(new ldc.waveform.WaveformRegionEvent(this, beg, dur));
+			}
+		}
+		// update cursor
+		this.updateRegion(this.cursor_id, t);
+
+		if (this.ebus) {
+			this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, t));
+
+			if (mousedown) {
+				if (x < 0) {
+					if (t > 0.0) {
+						var beg = this.windowStartTime() - this.windowDuration() / 50.0;
+						this.display(beg);
+						this.ebus.queue(new ldc.waveform.WaveformWindowEvent(this, beg));
+					}
+				}
+				else if (x >= this.canvas.width) {
+					var beg = this.windowStartTime() + this.windowDuration() / 50.0;
+					this.display(beg);
+					this.ebus.queue(new ldc.waveform.WaveformWindowEvent(this, beg));
+				}
+			}
+		}
+	}, false, this);
+
+	goog.events.listen(this.container, 'mousedown', function(e) {
+		if (e.button == 0) {  // left mouse button
+			var x = e.target.offsetLeft + e.offsetX;
+			if (x >= 0 && x < this.canvas.width) {
+				var t = this.p2t(x) + this.windowStartTime();
+				this.update_selection_('primary', t, 0);
+				if (this.ebus) {
+					this.ebus.queue(new ldc.waveform.WaveformRegionEvent(this, t, 0));
+				}
+				mousedown = true;
+				selection_anchor = t;
+			}
+		}
+	}, false, this);
+
+	goog.events.listen(document.body, 'mouseup', function(e) {
+		mousedown = false;
+	});
+}
+
+})();

@@ -4,8 +4,16 @@ goog.require('goog.cssom');
 
 jQuery(function($) {
 
+	var play_pos = 0.0;
+	var sel_beg = 0.0;
+	var sel_dur = 0.0;
+
 	$('#play-btn').on('click', function(e) {
-		if ($(this).text() == 'Play' || $(this).text() == 'Resume') {
+		if ($(this).text() == 'Play') {
+			$('#player').jPlayer('play', sel_beg);
+			$(this).button('play');
+		}
+		else if ($(this).text() == 'Resume') {
 			$('#player').jPlayer('play');
 			$(this).button('play');
 		}
@@ -22,22 +30,6 @@ jQuery(function($) {
 		$('#stop-btn').prop('disabled', true);
 	});
 
-	var player = $("#player").jPlayer({
-		ready: function() {
-			$(this).jPlayer('setMedia', {
-				oga: '/transcriber/test/data/cts.ogg'
-			});
-			$('#play-btn').prop('disabled', false);
-		},
-		supplied: "oga",
-		timeupdate: function(e) {
-			var t = e.jPlayer.status.currentTime;
-			$('#pos').text(t);
-			waveform.updateRegion(region, t);
-		}
-	});
-
-
 	var ebus = new ldc.event.EventBus;
 	var table = new ldc.datamodel.Table(['start','end','message'], ebus);
 	var textedit = new ldc.textdisplay.TextEdit('textpanel', ebus);
@@ -45,6 +37,19 @@ jQuery(function($) {
 	// initialize event bus connections
 	ebus.connect(ldc.event.DataUpdateEvent, textedit);
 	ebus.connect(ldc.event.DataUpdateEvent, table);
+	ebus.connect(ldc.waveform.WaveformCursorEvent, {
+		handleEvent: function(e) {
+			$('#pos').text(Math.round(e.args() * 10000) / 10000);
+		}
+	});
+	ebus.connect(ldc.waveform.WaveformRegionEvent, {
+		handleEvent: function(e) {
+			sel_beg = e.args().beg;
+			sel_dur = e.args().dur;
+			$('#sel-beg').text(Math.round(sel_beg * 10000) / 10000);
+			$('#sel-dur').text(Math.round(sel_dur * 10000) / 10000);
+		}
+	});
 
 	// initialize the data model
 	table.addRow([0.0, 2.0, "hello"]);
@@ -68,15 +73,33 @@ jQuery(function($) {
 		$canvas2.attr('width', '500px');
 		$canvas2.attr('height', '100px');
 		var $scrollbar = $('#scrollbar');
-		waveform = new ldc.waveform.RichWaveform(buffer, $canvas[0], 0);
-		waveform2 = new ldc.waveform.RichWaveform(buffer, $canvas2[0], 1);
+		var waveform = new ldc.waveform.RichWaveform(buffer, $canvas[0], 0, ebus);
+		var waveform2 = new ldc.waveform.RichWaveform(buffer, $canvas2[0], 1, ebus);
 		var wset = new ldc.waveform.WaveformSet;
 		wset.addWaveform(waveform);
 		wset.addWaveform(waveform2);
 		wset.display(0, 30);
-		region = waveform.addRegion(0, 0);
-		scrollbar = new ldc.waveform.Scrollbar(wset, $scrollbar[0]);
+		var scrollbar = new ldc.waveform.Scrollbar(wset, $scrollbar[0], ebus);
 		scrollbar.setWidth(500);
+
+		$("#player").jPlayer({
+			ready: function() {
+				$(this).jPlayer('setMedia', {
+					oga: '/transcriber/test/data/cts.ogg'
+				});
+				$('#play-btn').prop('disabled', false);
+			},
+			supplied: "oga",
+			timeupdate: function(e) {
+				play_pos = e.jPlayer.status.currentTime;
+				$('#pos').text(Math.round(play_pos * 10000) / 10000);
+				var ev = new ldc.waveform.WaveformCursorEvent(e.jPlayer, play_pos);
+				ebus.queue(ev);
+				if (play_pos >= sel_beg + sel_dur) {
+					$('#stop-btn').click();
+				}
+			}
+		});
 	}
 
 	// download shape file and call setup_waveform()

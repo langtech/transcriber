@@ -21,14 +21,14 @@ ldc.event.EventBus = function() {
  * Queue an event for propagation.
  *
  * @method queue
- * @param {Event} event
+ * @param {Event} e Event to propagate.
  */
-ldc.event.EventBus.prototype.queue = function(event) {
-	this.queued_events.push(event);
+ldc.event.EventBus.prototype.queue = function(e) {
+	this.queued_events.push(e);
 
 	while (this.queued_events.length > 0) {
 		var event = this.queued_events.shift();
-		var handlers = this.handlers[event.constructor];
+		var handlers = this.handlers[event.constructor.type];
 		if (handlers) {
 			for (var i=0; i < handlers.length; ++i) {
 				if (event.source() != handlers[i]) {
@@ -48,9 +48,9 @@ ldc.event.EventBus.prototype.queue = function(event) {
  *   method.
  */
 ldc.event.EventBus.prototype.connect = function(eventClass, handler) {
-	var handlers = this.handlers[eventClass];
+	var handlers = this.handlers[eventClass.type];
 	if (handlers == null) {
-		this.handlers[eventClass] = handlers = [handler];
+		this.handlers[eventClass.type] = handlers = [handler];
 	}
 	else if (handlers.indexOf(handler) < 0) {
 		handlers.push(handler);
@@ -65,7 +65,7 @@ ldc.event.EventBus.prototype.connect = function(eventClass, handler) {
  * @param {EventHandler} handler
  */
 ldc.event.EventBus.prototype.disconnect = function(eventClass, handler) {
-	var handlers = this.handlers[eventClass];
+	var handlers = this.handlers[eventClass.type];
 	if (handlers != null) {
 		var idx = handlers.indexOf(handler);
 		if (idx >= 0) {
