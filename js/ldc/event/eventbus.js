@@ -1,6 +1,7 @@
 /**
  * @module ldc
  * @submodule event
+ * @namespace event
  */
 goog.provide('ldc.event.EventBus');
 

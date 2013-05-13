@@ -2,7 +2,7 @@ goog.require('ldc.datamodel.Table');
 
 var expect = chai.expect;
 
-describe.skip("Table", function() {
+describe("Table", function() {
 
 	var ebus, table, rid0, rid1;
 
@@ -26,33 +26,16 @@ describe.skip("Table", function() {
 	})
 
 	describe("Event handling", function() {
-		it("should handle DataUpdateEvent", function(done) {
+		it("should handle TableUpdateRowEvent", function(done) {
 			var new_value = Math.random();
-			ebus.connect(ldc.event.DataUpdateEvent, table);
 
-			ebus.queue(new ldc.event.DataUpdateEvent(
-				{},
-				new ldc.datamodel.Update(rid1, {col3: new_value})
-			));
+			ebus.queue(new ldc.datamodel.TableUpdateRowEvent({}, rid1, {col3: new_value}));
 
 			setTimeout(function() {
 				expect(table.getCell(rid1, 'col3')).to.equal(new_value);
 				done();
 			}, 1800);
 		});
-
-		it("should send DataUpdateEvent when rows change", function(done) {
-			var new_value = Math.random();
-			var handler = {
-				handleEvent: function(event) {
-					expect(table.getCell(rid1, 'col3')).to.equal(new_value);
-					done();
-				}
-			}
-			ebus.connect(ldc.event.DataUpdateEvent, handler);
-			table.update(new ldc.datamodel.Update(rid1, {col3: new_value}));
-		});
 	});
-
 
 });

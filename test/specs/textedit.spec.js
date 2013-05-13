@@ -5,7 +5,7 @@ goog.require('goog.testing.events');
 
 var expect = chai.expect;
 
-describe.skip("TextEdit", function() {
+describe("TextEdit", function() {
 	var G = {}  // golbal context
 
 	before(function() {
@@ -20,8 +20,6 @@ describe.skip("TextEdit", function() {
 		G.rid2 = G.table.addRow([3.55, 4.0, 'how are you']);
 
 		G.textedit.setTable(G.table);
-		G.ebus.connect(ldc.event.DataUpdateEvent, G.table);
-		G.ebus.connect(ldc.event.DataUpdateEvent, G.textedit);		
 	})
 
 	it("should update data model when the view changes", function(done) {
@@ -40,19 +38,4 @@ describe.skip("TextEdit", function() {
 			done();
 		}, 500);
 	})
-
-	it("should update its view when data model changes", function(done) {
-		var text = 'some random text ' + Math.random();
-
-		G.table.update(new ldc.datamodel.Update(G.rid1, {
-			message: text
-		}));
-
-		setTimeout(function() {
-			var se = G.textedit.findSegment(G.rid1);
-			expect(se.text()).to.equal(text);
-			done();
-		}, 500);
-	})
-
 })

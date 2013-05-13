@@ -4,6 +4,7 @@ goog.require('goog.cssom');
 
 jQuery(function($) {
 
+	var main = this;
 	var play_pos = 0.0;
 	var sel_beg = 0.0;
 	var sel_dur = 0.0;
@@ -28,15 +29,24 @@ jQuery(function($) {
 		$('#player').jPlayer('stop');
 		$('#play-btn').button('reset');
 		$('#stop-btn').prop('disabled', true);
+
+		$('.dropdown-menu').dropdown();
 	});
 
 	var ebus = new ldc.event.EventBus;
 	var table = new ldc.datamodel.Table(['start','end','message'], ebus);
 	var textedit = new ldc.textdisplay.TextEdit('textpanel', ebus);
 
+
+	$('#create-seg-btn').on('click', function() {
+		var data = {start:sel_beg, end:sel_beg+sel_dur};
+		var rid = ldc.datamodel.Table.getNewRid();
+		var e = new ldc.datamodel.TableAddRowEvent(main, rid, data);
+		ebus.queue(e);
+	});
+
+
 	// initialize event bus connections
-	ebus.connect(ldc.event.DataUpdateEvent, textedit);
-	ebus.connect(ldc.event.DataUpdateEvent, table);
 	ebus.connect(ldc.waveform.WaveformCursorEvent, {
 		handleEvent: function(e) {
 			$('#pos').text(Math.round(e.args() * 10000) / 10000);
@@ -48,6 +58,8 @@ jQuery(function($) {
 			sel_dur = e.args().dur;
 			$('#sel-beg').text(Math.round(sel_beg * 10000) / 10000);
 			$('#sel-dur').text(Math.round(sel_dur * 10000) / 10000);
+
+			$('#create-seg-btn').prop('disabled', sel_dur < 0.00005);
 		}
 	});
 

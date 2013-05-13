@@ -1,6 +1,7 @@
 /**
  * @module ldc
  * @submodule datamodel
+ * @namespace datamodel
  */
 goog.provide('ldc.datamodel.Segment');
 
@@ -26,9 +27,20 @@ ldc.datamodel.Segment.prototype.value = function(field) {
 }
 
 /**
+ * @method set
+ * @param {String} field
+ * @param {String|Number} value
+ */
+ldc.datamodel.Segment.prototype.set = function(field, value) {
+	var u = {}
+	u[field] = value;
+	this.table.update(this._rid, u);
+}
+
+/**
  * @method rid
  * @return {Number}
  */
-ldc.datamodel.Segment.prototype.rid = function(field) {
+ldc.datamodel.Segment.prototype.rid = function() {
 	return this._rid;
 }

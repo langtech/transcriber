@@ -1,14 +1,10 @@
 /**
  * @module ldc
  * @submodule event
+ * @namespace event
  */
 goog.provide('ldc.event.Event');
-goog.provide('ldc.event.DataUpdateEvent');
-// Probably it's not necessary to list all the subclasses of the Event class.
-// The idea is that they all go with Event class, i.e. when someone requires
-// this module, he ends up requiring all subclasses of the Event class. Or,
-// If someone needs a subclass of the Event class, he has to require this
-// module.
+goog.provide('ldc.event.TextEvent');
 
 /**
  * @class Event
@@ -45,6 +41,10 @@ ldc.event.Event = function(source, args) {
 }
 
 /**
+ * Generates a unique IDs. Each event class needs to have a unique value for
+ * its type property. Use this method to get a unique type ID for new event
+ * classes.
+ *
  * @method newTypeId
  * @static
  * @protected
@@ -96,6 +96,8 @@ ldc.event.Event.prototype.source = function() {
 }
 
 /**
+ * Shows how the Event class can be subclassed.
+ *
  * @class TestEvent
  * @constructor
  * @extends Event
@@ -107,23 +109,3 @@ ldc.event.TestEvent = function(source) {
 goog.inherits(ldc.event.TestEvent, ldc.event.Event);
 
 ldc.event.TestEvent.type = ldc.event.Event.newTypeId();
-
-/**
- * An event where there has been a change in the "data model". For example,
- * when a user edits a text, the text widget would send an instance of this
- * event. Or, when the backend pushes a chage to the data model component,
- * it would send this event so that display widget can update their view.
- *
- * @class DataUpdateEvent
- * @extends Event
- * @constructor
- * @param {Object} source Object that is the source of the event.
- * @param {Update} update An Update object.
- */
-ldc.event.DataUpdateEvent = function(source, update) {
-	goog.base(this, source, update);
-}
-goog.inherits(ldc.event.DataUpdateEvent, ldc.event.Event);
-
-ldc.event.DataUpdateEvent.type = ldc.event.Event.newTypeId();
-

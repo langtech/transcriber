@@ -1,10 +1,12 @@
+(function() {
+
 /**
  * @module ldc
  * @submodule datamodel
+ * @namespace datamodel
  */
 goog.provide('ldc.datamodel.Table');
-goog.require('ldc.datamodel.Update');
-goog.require('ldc.event.DataUpdateEvent');
+goog.require('ldc.datamodel.TableUpdateRowEvent');
 
 /**
  * Provides an interface for table-like data structure. Allows to add and
@@ -19,7 +21,24 @@ ldc.datamodel.Table = function(header, eventBus) {
 	this.ebus = eventBus;
 	// TODO: validate header
 	this.header = header;
-	this.rows = [];
+	this.rows = {};
+
+	if (eventBus) {
+		eventBus.connect(ldc.datamodel.TableUpdateRowEvent, this);
+		eventBus.connect(ldc.datamodel.TableAddRowEvent, this);
+		eventBus.connect(ldc.datamodel.TableDeleteRowEvent, this);
+	}
+}
+
+var next_rid = 0;
+var rid_pool = [];
+ldc.datamodel.Table.getNewRid = function() {
+	if (rid_pool.length > 0) {
+		return rid_pool.shift();
+	}
+	else {
+		return next_rid++;
+	}
 }
 
 /**
@@ -27,17 +46,34 @@ ldc.datamodel.Table = function(header, eventBus) {
  *
  * @method addRow
  * @param {Array} row An array of strings and numbers.
+ * @param {Number} [rid] If specified, use this as the rid.
  * @return {Number} Row id, a.k.a. rid.
  */
-ldc.datamodel.Table.prototype.addRow = function(row) {
+ldc.datamodel.Table.prototype.addRow = function(row, rid) {
 	var newrow = [];
 	for (var i=0; i < this.header.length; ++i) {
 		var v = row[i];
 		// TODO: make sure that the value is either a string or a number
 		newrow.push(v);
 	}
-	this.rows.push(newrow);
-	return this.rows.length - 1;
+	if (rid == null) {
+		rid = ldc.datamodel.Table.getNewRid();
+	}
+	this.rows[rid] = newrow;
+	return rid;
+}
+
+/**
+ * Delete a row.
+ *
+ * @method deleteRow
+ * @param {Number} rid
+ */
+ldc.datamodel.Table.prototype.deleteRow = function(rid) {
+	if (this.rows.hasOwnProperty(rid)) {
+		rid_pool.push(rid);
+		delete this.rows[rid];
+	}
 }
 
 /**
@@ -52,9 +88,11 @@ ldc.datamodel.Table.prototype.addRow = function(row) {
 ldc.datamodel.Table.prototype.find = function(field, value) {
 	var rows = [];
 	var idx = this.header.indexOf(field);
-	for (var i=0; i < this.rows.length; ++i) {
-		if (this.rows[i][idx] == value) {
-			rows.push(i);
+	for (var k in this.rows) {
+		if (this.rows.hasOwnProperty(k)) {
+			if (this.rows[k][idx] == value) {
+				rows.push(parseInt(k));
+			}
 		}
 	}
 	return rows;
@@ -85,26 +123,16 @@ ldc.datamodel.Table.prototype.getCell = function(rid, field) {
  *
  * @method update
  * @param {Update} update An Update object.
- * @param {Boolean} sendEvent=true Whether or not broadcast the change.
+ * @param {Boolean} [sendEvent=true] Whether the update should be broadcast.
  */
-ldc.datamodel.Table.prototype.update = function(update, sendEvent) {
-	var rid = update.rid();
+ldc.datamodel.Table.prototype.updateRow = function(rid, update) {
 	var row = this.rows[rid];
 	if (row) {
-		var cleaned_update = new ldc.datamodel.Update(rid);
-		var header = this.header;
-		update.each(function(k, v) {
-			// TODO: this is inefficient
-			var i = header.indexOf(k);
-			if (i >= 0) {
-				row[i] = v;
-				cleaned_update.set(k, v);
+		for (var i=0; i < this.header.length; ++i) {
+			var k = this.header[i];
+			if (update.hasOwnProperty(k)) {
+				row[i] = update[k];
 			}
-		});
-
-		if (this.ebus && (sendEvent == null || sendEvent == true)) {
-			var e = new ldc.event.DataUpdateEvent(this, cleaned_update);
-			this.ebus.queue(e);
 		}
 	}
 }
@@ -114,11 +142,23 @@ ldc.datamodel.Table.prototype.update = function(update, sendEvent) {
  * @param {Event} event
  */
 ldc.datamodel.Table.prototype.handleEvent = function(event) {
-	if (event.constructor == ldc.event.DataUpdateEvent) {
-		var eargs = event.args();
-		if (eargs != null) {
-			this.update(eargs);
+	if (event.constructor == ldc.datamodel.TableUpdateRowEvent) {
+		var args = event.args();
+		this.updateRow(args.rid, args.data);
+	}
+	else if (event.constructor == ldc.datamodel.TableAddRowEvent) {
+		var args = event.args();
+		var row = [];
+		for (var i=0; i < this.header.length; ++i) {
+			var k = this.header[i];
+			if (args.data.hasOwnProperty(k)) {
+				row.push(args.data[k]);
+			}
+			else {
+				row.push(null);
+			}
 		}
+		this.addRow(row, args.rid);
 	}
 }
 
@@ -132,3 +172,5 @@ ldc.datamodel.Table.prototype._copy_row = function(row) {
 	}
 	return newrow;
 }
+
+})();
