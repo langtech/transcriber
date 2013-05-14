@@ -1,6 +1,7 @@
 /**
  * @module ldc
  * @submodule datamodel
+ * @namespace datamodel
  */
 goog.provide('ldc.datamodel.SegmentSet');
 

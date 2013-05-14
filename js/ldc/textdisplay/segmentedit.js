@@ -3,9 +3,9 @@
 /**
  * @module ldc
  * @submodule textdisplay
+ * @namespace textdisplay
  */
 goog.provide("ldc.textdisplay.SegmentEdit");
-goog.require("ldc.datamodel.Update");
 goog.require('goog.dom');
 
 /**
@@ -73,9 +73,7 @@ ldc.textdisplay.SegmentEdit.implantListener = function(subject, callback) {
 	goog.events.listen(subject, 'blur', function(event) {
 		var dom = goog.dom.getAncestorByClass(event.target, 'segmentedit');
 		var rid = parse_html_id(dom.id);
-		callback(new ldc.datamodel.Update(rid, {
-			message: event.target.textContent
-		}));
+		callback(rid, {message: event.target.textContent});
 	}, true);
 }
 
@@ -89,6 +87,11 @@ ldc.textdisplay.SegmentEdit.prototype.getChange = function() {
 			message: goog.dom.getFirstElementChild(this._dom).textContent
 		}
 	}
+}
+
+ldc.textdisplay.SegmentEdit.findRid = function(root) {
+	var dom = goog.dom.getAncestorByClass(root, 'segmentedit');
+	return parse_html_id(dom.id);
 }
 
 /**

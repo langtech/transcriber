@@ -4,5 +4,7 @@
  */
 goog.provide('ldc.datamodel');
 goog.require('ldc.datamodel.Table');
-goog.require('ldc.datamodel.Update');
 goog.require('ldc.datamodel.Segment');
+goog.require('ldc.datamodel.TableUpdateRowEvent');
+goog.require('ldc.datamodel.TableAddRowEvent');
+goog.require('ldc.datamodel.TableDeleteRowEvent');
