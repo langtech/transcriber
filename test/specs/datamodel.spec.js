@@ -15,11 +15,11 @@ describe("Table", function() {
 
 	describe("Adding and searching rows", function() {
 		it("should allow adding and retrieving rows", function() {
-			var rids = table.find('col2', 1);
+			var rids = table.find('col2', function(v) { return v == 1 });
 			expect(rids.length).to.equal(1);
 			expect(rids[0]).to.equal(rid1);
 
-			rids = table.find('col3', 2);
+			rids = table.find('col3', function(v) { return v == 2 });
 			expect(rids.length).to.equal(1);
 			expect(rids[0]).to.equal(rid0);
 		});

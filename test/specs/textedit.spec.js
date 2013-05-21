@@ -14,10 +14,10 @@ describe("TextEdit", function() {
 
 		G.textedit = new ldc.textdisplay.TextEdit("text", G.ebus);
 
-		G.table = new ldc.datamodel.Table(["start", "end", "message"], G.ebus);
-		G.rid0 = G.table.addRow([1.0, 1.23, 'hello']);
-		G.rid1 = G.table.addRow([1.89, 2.08, 'hi']);
-		G.rid2 = G.table.addRow([3.55, 4.0, 'how are you']);
+		G.table = new ldc.datamodel.Table(['start', 'length', 'transcript'], G.ebus);
+		G.rid0 = G.table.addRow([1.0, 0.23, 'hello']);
+		G.rid1 = G.table.addRow([1.89, 0.19, 'hi']);
+		G.rid2 = G.table.addRow([3.55, 0.35, 'how are you']);
 
 		G.textedit.setTable(G.table);
 	})
@@ -34,7 +34,7 @@ describe("TextEdit", function() {
 		goog.testing.events.fireBrowserEvent(e);
 
 		setTimeout(function() {
-			expect(G.table.getCell(G.rid1, 'message')).to.equal(text);
+			expect(G.table.getCell(G.rid1, 'transcript')).to.equal(text);
 			done();
 		}, 500);
 	})

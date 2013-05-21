@@ -10,7 +10,7 @@ goog.require('ldc.datamodel.TableUpdateRowEvent');
 
 /**
  * Provides an interface for table-like data structure. Allows to add and
- * retrieve rows.
+ * retrieve rows. Value of the table cell can be any type.
  * 
  * @class Table
  * @constructor
@@ -20,7 +20,7 @@ goog.require('ldc.datamodel.TableUpdateRowEvent');
 ldc.datamodel.Table = function(header, eventBus) {
 	this.ebus = eventBus;
 	// TODO: validate header
-	this.header = header;
+	this.header_ = header;
 	this.rows = {};
 
 	if (eventBus) {
@@ -30,6 +30,12 @@ ldc.datamodel.Table = function(header, eventBus) {
 	}
 }
 
+/**
+ * Returns a new unique rid.
+ * @method getNewRid
+ * @static
+ * @return {Number} A new unique rid.
+ */
 var next_rid = 0;
 var rid_pool = [];
 ldc.datamodel.Table.getNewRid = function() {
@@ -42,6 +48,16 @@ ldc.datamodel.Table.getNewRid = function() {
 }
 
 /**
+ * Returns the table header.
+ *
+ * @method header
+ * @return {Array}
+ */
+ldc.datamodel.Table.header = function() {
+	return this.header_;
+}
+
+/**
  * Add a row.
  *
  * @method addRow
@@ -51,7 +67,7 @@ ldc.datamodel.Table.getNewRid = function() {
  */
 ldc.datamodel.Table.prototype.addRow = function(row, rid) {
 	var newrow = [];
-	for (var i=0; i < this.header.length; ++i) {
+	for (var i=0; i < this.header_.length; ++i) {
 		var v = row[i];
 		// TODO: make sure that the value is either a string or a number
 		newrow.push(v);
@@ -77,20 +93,24 @@ ldc.datamodel.Table.prototype.deleteRow = function(rid) {
 }
 
 /**
- * Find rows by specified field and value. If both field and value are not
- * given, returns everything.
+ * Iterates rows one by one. In each iteration, feeds the value of the
+ * specified field to the matcher. Returns a list of rids for which the
+ * matcher returned true.
+ *
+ * If field is null or matcher is null, returns all rids.
  *
  * @method find
- * @param {String} field
- * @param {String|Number} value
- * @return {Array} An array of rows indices.
+ * @param {String} [field]
+ * @param {Function} [matcher] Boolean function taking a single parameter.
+ * @return {Array} An array of rids.
  */
-ldc.datamodel.Table.prototype.find = function(field, value) {
+ldc.datamodel.Table.prototype.find = function(field, matcher) {
 	var rows = [];
-	var idx = this.header.indexOf(field);
+	var idx = field == null ? 0 : this.header_.indexOf(field);
+	var f = matcher == null ? function() {return true} : matcher;
 	for (var k in this.rows) {
 		if (this.rows.hasOwnProperty(k)) {
-			if (this.rows[k][idx] == value) {
+			if (f(this.rows[k][idx]) == true) {
 				rows.push(parseInt(k));
 			}
 		}
@@ -104,17 +124,17 @@ ldc.datamodel.Table.prototype.find = function(field, value) {
  * @return {Object}
  */
 ldc.datamodel.Table.prototype.getRow = function(rid) {
-	return this._copy_row(this.rows[rid]);
+	return _copy_row(this.rows[rid]);
 }
 
 /**
  * @method getCell
  * @param {Number} rid
  * @param {String} field
- * @return {String|Number}
+ * @return {Any type}
  */
 ldc.datamodel.Table.prototype.getCell = function(rid, field) {
-	var idx = this.header.indexOf(field);
+	var idx = this.header_.indexOf(field);
 	return this.rows[rid][idx];
 }
 
@@ -122,16 +142,44 @@ ldc.datamodel.Table.prototype.getCell = function(rid, field) {
  * Update cells in a row.
  *
  * @method update
- * @param {Update} update An Update object.
- * @param {Boolean} [sendEvent=true] Whether the update should be broadcast.
+ * @param {Number} rid
+ * @param {Object} update An Update object.
  */
 ldc.datamodel.Table.prototype.updateRow = function(rid, update) {
 	var row = this.rows[rid];
 	if (row) {
-		for (var i=0; i < this.header.length; ++i) {
-			var k = this.header[i];
+		for (var i=0; i < this.header_.length; ++i) {
+			var k = this.header_[i];
 			if (update.hasOwnProperty(k)) {
-				row[i] = update[k];
+				if (is_hash(row[i]) && is_hash(update[k])) {
+					update_object(row[i], update[k]);
+				}
+				else {
+					row[i] = update[k];
+				}
+			}
+		}
+	}
+}
+
+function is_hash(obj) {
+	return (obj instanceof Object) && 
+		!(obj instanceof Array) &&
+		!(obj instanceof Function);
+}
+
+function update_object(obj, updater) {
+	for (var k in updater) {
+		if (updater.hasOwnProperty(k)) {
+			if (k[k.length-1] == '$') {
+				obj[k.slice(0,-1)] = updater[k];
+			}
+			else if (obj.hasOwnProperty(k) && is_hash(obj[k]) && is_hash(updater[k])) {
+				// recurse
+				update_object(obj[k], updater[k]);
+			}
+			else {
+				obj[k] = updater[k];
 			}
 		}
 	}
@@ -149,8 +197,8 @@ ldc.datamodel.Table.prototype.handleEvent = function(event) {
 	else if (event.constructor == ldc.datamodel.TableAddRowEvent) {
 		var args = event.args();
 		var row = [];
-		for (var i=0; i < this.header.length; ++i) {
-			var k = this.header[i];
+		for (var i=0; i < this.header_.length; ++i) {
+			var k = this.header_[i];
 			if (args.data.hasOwnProperty(k)) {
 				row.push(args.data[k]);
 			}
@@ -165,7 +213,7 @@ ldc.datamodel.Table.prototype.handleEvent = function(event) {
 
 // private utilitty functions
 
-ldc.datamodel.Table.prototype._copy_row = function(row) {
+var _copy_row = function(row) {
 	var newrow = [];
 	for (var i=0; i < row.length; ++i) {
 		newrow.push(row[i]);
