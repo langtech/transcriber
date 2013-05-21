@@ -34,12 +34,12 @@ jQuery(function($) {
 	});
 
 	var ebus = new ldc.event.EventBus;
-	var table = new ldc.datamodel.Table(['start','end','message'], ebus);
+	var table = new ldc.datamodel.Table(['offset','length','transcript'], ebus);
 	var textedit = new ldc.textdisplay.TextEdit('textpanel', ebus);
 
 
 	$('#create-seg-btn').on('click', function() {
-		var data = {start:sel_beg, end:sel_beg+sel_dur};
+		var data = {offset:sel_beg, length:sel_dur};
 		var rid = ldc.datamodel.Table.getNewRid();
 		var e = new ldc.datamodel.TableAddRowEvent(main, rid, data);
 		ebus.queue(e);
@@ -65,8 +65,8 @@ jQuery(function($) {
 
 	// initialize the data model
 	table.addRow([0.0, 2.0, "hello"]);
-	table.addRow([2.1, 3.0, "hi"]);
-	table.addRow([3.5, 4.2, "how are you?"]);
+	table.addRow([2.1, 0.9, "hi"]);
+	table.addRow([3.5, 0.7, "how are you?"]);
 
 	// a hook for debugger
 	G = {

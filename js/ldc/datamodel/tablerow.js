@@ -3,17 +3,17 @@
  * @submodule datamodel
  * @namespace datamodel
  */
-goog.provide('ldc.datamodel.Segment');
+goog.provide('ldc.datamodel.TableRow');
 
 /**
- * Class representing a segment.
+ * Class representing a row of Table.
  *
- * @class Segment
+ * @class TableRow
  * @constructor
  * @param {Table} table
  * @param {Number} rid
  */
-ldc.datamodel.Segment = function(table, rid) {
+ldc.datamodel.TableRow = function(table, rid) {
 	this.table = table;
 	this._rid = rid;
 }
@@ -21,17 +21,18 @@ ldc.datamodel.Segment = function(table, rid) {
 /**
  * @method value
  * @param {String} field
+ * @return {Any type} the value of the cell.
  */
-ldc.datamodel.Segment.prototype.value = function(field) {
+ldc.datamodel.TableRow.prototype.value = function(field) {
 	return this.table.getCell(this._rid, field);
 }
 
 /**
  * @method set
  * @param {String} field
- * @param {String|Number} value
+ * @param {Any type} value
  */
-ldc.datamodel.Segment.prototype.set = function(field, value) {
+ldc.datamodel.TableRow.prototype.set = function(field, value) {
 	var u = {}
 	u[field] = value;
 	this.table.update(this._rid, u);
@@ -41,6 +42,6 @@ ldc.datamodel.Segment.prototype.set = function(field, value) {
  * @method rid
  * @return {Number}
  */
-ldc.datamodel.Segment.prototype.rid = function() {
+ldc.datamodel.TableRow.prototype.rid = function() {
 	return this._rid;
 }
