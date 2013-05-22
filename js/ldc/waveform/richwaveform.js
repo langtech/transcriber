@@ -41,29 +41,25 @@ ldc.waveform.RichWaveform = function(buffer, canvas, channel, ebus) {
 	goog.dom.appendChild(this.container, canvas);
 
 	this.regions = {}
-	// Region is an object represention a region in the waveform. It has
+	// Region is an object representing a region in the waveform. It has
 	// following properties:
 	//    html  - a DIV element
 	//    pos   - start position of the region in seconds
 	//    dur   - length of the region in seconds
 	//    color - color of the region
-	//    alpha - transparency (client has no control on this)
+	//    rid   - id of table row associated with the region
 
 	this.cursor_id = this.addRegion(0, 0);
 	this.selection_id = this.addRegion(0, 0, null, 0); // initially hidden
 
 	// There are two classes of selections: primary and secondary. If the
 	// user action on selection originates from this waveform, the selection
-	// is primary. The selection if secondary otherwise. Usually, primary
+	// is primary. The selection is secondary otherwise. Usually, primary
 	// selection has more intense color, and secondary is rendered with a
 	// lighter color.
 	this.selection_color = {
-		'primary': 'red',
-		'secondary': 'red'
-	};
-	this.selection_alpha = {
-		'primary': 0.4,
-		'secondary': 0.05
+		'primary': 'rgba(255,0,0,0.4)',
+		'secondary': 'rgba(255,0,0,0.05)'
 	};
 
 	// listen on waveform events
@@ -72,6 +68,7 @@ ldc.waveform.RichWaveform = function(buffer, canvas, channel, ebus) {
 		ebus.connect(ldc.waveform.WaveformCursorEvent, this);
 		ebus.connect(ldc.waveform.WaveformRegionEvent, this);
 		ebus.connect(ldc.waveform.WaveformWindowEvent, this);
+		ebus.connect(ldc.waveform.WaveformSelectEvent, this);
 	}
 
 	// listen on mouse event so that we animate cursor and selection.
@@ -80,14 +77,15 @@ ldc.waveform.RichWaveform = function(buffer, canvas, channel, ebus) {
 goog.inherits(ldc.waveform.RichWaveform, ldc.waveform.Waveform);
 
 /**
+ * Add a region to the waveform.
+ *
  * @method addRegion
  * @param {Number} t Start position of the region in seconds.
  * @param {Number} [dur=0]
  * @param {String} [color=red]
- * @param {Number} [transparency=0.4]
  * @return {String} A unique ID for the region.
  */
-ldc.waveform.RichWaveform.prototype.addRegion = function(t, dur, color, transparency) {
+ldc.waveform.RichWaveform.prototype.addRegion = function(t, dur, color) {
 	var div = goog.dom.createElement('div');
 	goog.dom.appendChild(this.container, div);
 	goog.events.listen(div, 'dragstart', function(e) {
@@ -105,7 +103,6 @@ ldc.waveform.RichWaveform.prototype.addRegion = function(t, dur, color, transpar
 		pos: t,
 		dur: dur==null || dur < 0 ? 0 : dur,
 		color: color==null ? 'red' : color,
-		alpha: transparency==null ? 0.4 : transparency
 	}
 
 	this.regions[id] = region;
@@ -117,13 +114,12 @@ ldc.waveform.RichWaveform.prototype.addRegion = function(t, dur, color, transpar
  * Update the position and size of the region.
  *
  * @method updateRegion
- * @param {String} id An ID referencing the region to be updated.
+ * @param {String} id Region ID.
  * @param {Number} [t] New position in seconds. No change if null.
  * @param {Number} [dur] New size of the region in seconds. No change if null.
  * @param {String} [color] New color of the region.
- * @param {Number} [transparency] New transparency of the region.
  */
-ldc.waveform.RichWaveform.prototype.updateRegion = function(id, t, dur, color, transparency) {
+ldc.waveform.RichWaveform.prototype.updateRegion = function(id, t, dur, color) {
 	if (this.regions.hasOwnProperty(id)) {
 		var r = this.regions[id];
 		var has_change = false;
@@ -141,10 +137,6 @@ ldc.waveform.RichWaveform.prototype.updateRegion = function(id, t, dur, color, t
 			r.color = color;
 			has_change = true;
 		}
-		if (transparency != null && r.alpha != transparency) {
-			r.alpha = transparency;
-			has_change = true;
-		}
 		if (has_change) {
 			this.render_region_(r);
 		}
@@ -152,11 +144,39 @@ ldc.waveform.RichWaveform.prototype.updateRegion = function(id, t, dur, color, t
 }
 
 /**
- * Get a Region object associated with the given ID.
+ * Associate the region with a table row in the data model.
+ *
+ * @method linkRegion
+ * @param {String} id Region ID.
+ * @param {Number} rid
+ */
+ldc.waveform.RichWaveform.prototype.linkRegion = function(id, rid) {
+	if (this.regions.hasOwnProperty(id)) {
+		var r = this.regions[id];
+		r.rid = rid;
+		this.render_region_(r);
+	}
+}
+
+/**
+ * Remove the association between the region and the data model.
+ *
+ * @method unlinkRegion
+ * @param {String} id Region ID.
+ */
+ldc.waveform.RichWaveform.prototype.unlinkRegion = function(id) {
+	if (this.regions.hasOwnProperty(id)) {
+		var r = this.regions[id];
+		delete r.rid;
+	}
+}
+
+/**
+ * Get a region object associated with the given ID.
  *
  * @method getRegion
- * @param {Number|String} id This must be the value returned by addRegion.
- * @return {Region} A Region object on success. Null otherwise.
+ * @param {String} id This must be the value returned by addRegion.
+ * @return {region} A region object on success. Null otherwise.
  */
 ldc.waveform.RichWaveform.prototype.getRegion = function(id) {
 	if (this.regions.hasOwnProperty(id)) {
@@ -166,16 +186,20 @@ ldc.waveform.RichWaveform.prototype.getRegion = function(id) {
 }
 
 /**
+ * Get a region object representing the waveform cursor.
+ *
  * @method getCursor
- * @return {Region} A Region object representing the cursor.
+ * @return {region} A region object representing the cursor.
  */
 ldc.waveform.RichWaveform.prototype.getCursor = function() {
 	return this.getRegion(this.cursor_id);
 }
 
 /**
+ * Get a region object represention the "selected" region.
+ *
  * @method getSelection
- * @return {Region} A Region object representing the region.
+ * @return {region} A region object representing the region.
  */
 ldc.waveform.RichWaveform.prototype.getRegion = function() {
 	return this.getRegion(this.selection_id);
@@ -216,16 +240,31 @@ ldc.waveform.RichWaveform.prototype.display = function(t, dur) {
  * @param {Event} e Event object.
  */
 ldc.waveform.RichWaveform.prototype.handleEvent = function(e) {
-	if (e.constructor == ldc.waveform.WaveformCursorEvent) {
+	if (e instanceof ldc.waveform.WaveformCursorEvent) {
 		this.updateRegion(this.cursor_id, e.args());
 	}
-	else if (e.constructor == ldc.waveform.WaveformRegionEvent) {
+	else if (e instanceof ldc.waveform.WaveformRegionEvent) {
 		var arg = e.args();
-		this.update_selection_('secondary', arg.beg, arg.dur);
+		var type = arg.waveform == this.id ? 'primary' : 'secondary';
+		this.unlinkRegion(this.selection_id);
+		this.update_selection_(type, arg.beg, arg.dur);
 	}
-	else if (e.constructor == ldc.waveform.WaveformWindowEvent) {
+	else if (e instanceof ldc.waveform.WaveformWindowEvent) {
 		var arg = e.args();
-		this.display(arg.beg, arg.end);
+		this.display(arg.beg, arg.dur);
+	}
+	else if (e instanceof ldc.waveform.WaveformSelectEvent) {
+		var arg = e.args();
+		var type;
+		if (arg.waveform == this.id) {
+			type = 'primary';
+			this.linkRegion(this.selection_id, arg.rid);
+		}
+		else {
+			type = 'secondary';
+			this.unlinkRegion(this.selection_id);
+		}
+		this.update_selection_(type, arg.beg, arg.dur, arg.waveform);
 	}
 }
 
@@ -252,10 +291,19 @@ ldc.waveform.RichWaveform.prototype.render_region_ = function(r) {
 		r.html.style.width = (y - x + 1) + 'px';
 		r.html.style.height = this.canvas.height + 'px';
 		r.html.style.backgroundColor = r.color;
-		goog.style.setOpacity(r.html, r.alpha);
 		r.html.style.position = 'absolute';
 		r.html.style.top = '0px';
 		r.html.style.display = 'block';
+		if (r.rid != null) {
+			r.html.style.borderStyle = 'solid';
+			r.html.style.borderWidth = '1px';
+			r.html.style.borderColor = 'black';
+		}
+		else {
+			r.html.style.borderStyle = '';
+			r.html.style.borderWidth = '';
+			r.html.style.borderColor = '';
+		}
 	}
 }
 
@@ -269,8 +317,7 @@ ldc.waveform.RichWaveform.prototype.render_region_ = function(r) {
  */
  ldc.waveform.RichWaveform.prototype.update_selection_ = function(klass, beg, dur) {
 		var color = this.selection_color[klass];
-		var alpha = this.selection_alpha[klass];
-		this.updateRegion(this.selection_id, beg, dur, color, alpha);
+		this.updateRegion(this.selection_id, beg, dur, color);
 	};
 
 /**
@@ -292,9 +339,10 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 		if (mousedown) {
 			var beg = Math.min(t, selection_anchor);
 			var dur = Math.max(t, selection_anchor) - beg;
+			this.unlinkRegion(this.selection_id);
 			this.update_selection_('primary', beg, dur);
 			if (this.ebus) {
-				this.ebus.queue(new ldc.waveform.WaveformRegionEvent(this, beg, dur));
+				this.ebus.queue(new ldc.waveform.WaveformRegionEvent(this, beg, dur, this.id));
 			}
 		}
 		// update cursor
@@ -325,6 +373,7 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 			var x = e.target.offsetLeft + e.offsetX;
 			if (x >= 0 && x < this.canvas.width) {
 				var t = this.p2t(x) + this.windowStartTime();
+				this.unlinkRegion(this.selection_id);
 				this.update_selection_('primary', t, 0);
 				if (this.ebus) {
 					this.ebus.queue(new ldc.waveform.WaveformRegionEvent(this, t, 0));

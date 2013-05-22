@@ -6,6 +6,7 @@
 goog.provide('ldc.waveform.WaveformCursorEvent');
 goog.provide('ldc.waveform.WaveformRegionEvent');
 goog.provide('ldc.waveform.WaveformWindowEvent');
+goog.provide('ldc.waveform.WaveformSelectEvent');
 goog.require('ldc.event.Event');
 
 /**
@@ -47,9 +48,10 @@ ldc.waveform.WaveformCursorEvent.type = ldc.event.Event.newTypeId();
  * @param {Object} source The object creating this event.
  * @param {Number} beg Start time of the region in seconds.
  * @param {Number} dur Duration of the region inseconds.
+ * @param {Number} waveform Waveform ID.
  */
-ldc.waveform.WaveformRegionEvent = function(source, beg, dur) {
-	goog.base(this, source, {beg:beg, dur:dur});
+ldc.waveform.WaveformRegionEvent = function(source, beg, dur, waveform) {
+	goog.base(this, source, {beg:beg, dur:dur, waveform:waveform});
 }
 goog.inherits(ldc.waveform.WaveformRegionEvent, ldc.event.Event);
 ldc.waveform.WaveformRegionEvent.type = ldc.event.Event.newTypeId();
@@ -58,8 +60,11 @@ ldc.waveform.WaveformRegionEvent.type = ldc.event.Event.newTypeId();
  * Returns the argument of the event.
  *
  * @method args
- * @return {Object} Object with two properties: beg and dur. Beg is for the
- *   start time of the region, and dur is for the duration.
+ * @return {Object} Object with 3 properties:
+ *
+ *   - beg: start time of the region
+ *   - dur: length of the region
+ *   - waveform: waveform id
  */
 
 /**
@@ -82,6 +87,39 @@ ldc.waveform.WaveformWindowEvent.type = ldc.event.Event.newTypeId();
  * Returns the argument of the event.
  *
  * @method args
- * @return {Object} Object with two properties: beg and dur. Beg is for the
- *   start time of the region, and dur is for the duration.
+ * @return {Object} Object with two properties:
+ *
+ *   - beg: start time of the region
+ *   - dur: length of the region
+ */
+
+/**
+ * Acknowledges that an item in the data model (a row in the table) has been
+ * "selected".
+ *
+ * @class WaveformSelectEvent
+ * @constructor
+ * @extends Event
+ * @param {Object} source The object creating this event.
+ * @param {Number} beg Start time of the region in seconds.
+ * @param {Number} dur Duration of the region inseconds.
+ * @param {Number} waveform Waveform ID.
+ * @param {Number} rid
+ */
+ldc.waveform.WaveformSelectEvent = function(source, beg, dur, waveform, rid) {
+	goog.base(this, source, {beg:beg, dur:dur, waveform:waveform, rid:rid});
+}
+goog.inherits(ldc.waveform.WaveformSelectEvent, ldc.event.Event);
+ldc.waveform.WaveformSelectEvent.type = ldc.event.Event.newTypeId();
+
+/**
+ * Returns the argument of the event.
+ *
+ * @method args
+ * @return {Object} Object with the following properties:
+ *
+ *   - beg: start time of the region
+ *   - dur: length of the region
+ *   - waveform: waveform id
+ *   - rid: rid for a Table object associated with this event
  */
