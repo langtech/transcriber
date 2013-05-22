@@ -32,6 +32,8 @@ ldc.textdisplay.SegmentEdit = function(row) {
 				contentEditable: 'true'
 			}, row.value('transcript'))
 		);
+		dom.style.backgroundColor = '#EEEEFF';
+		dom.style.margin = '1px';
 	}
 	this._dom = dom;
 }

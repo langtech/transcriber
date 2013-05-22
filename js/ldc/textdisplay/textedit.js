@@ -57,7 +57,8 @@ ldc.textdisplay.TextEdit = function(id, eventBus, segFilter) {
 			else if (e.eventType == ldc.textdisplay.SegmentEdit.EventType.SELECT) {
 				var beg = that.table.getCell(e.rid, 'offset');
 				var dur = that.table.getCell(e.rid, 'length');
-				var ev = new ldc.waveform.WaveformRegionEvent(that, beg, dur);
+				var wid = that.table.getCell(e.rid, 'waveform');
+				var ev = new ldc.waveform.WaveformSelectEvent(that, beg, dur, wid, e.rid);
 				eventBus.queue(ev);
 			}
 		}
@@ -116,12 +117,12 @@ ldc.textdisplay.TextEdit.prototype.handleEvent = function(event) {
 	}
 	else if (event.constructor == ldc.datamodel.TableAddRowEvent) {
 		var arg = event.args();
-		var smax = this.rid2se.getMaximum();
+		var smax = this.rid2se.getCount() > 0 ? this.rid2se.getMaximum() : null;
 		var s = {
 			value: function(k) { return arg.data[k]; },
 			rid: function() { return arg.rid; }
 		};
-		if (comp_seg(s, smax) < 0) {
+		if (smax != null && comp_seg(s, smax) < 0) {
 			var before = null;
 			this.rid2se.inOrderTraverse(function(x) {
 				var se = new ldc.textdisplay.SegmentEdit(x);

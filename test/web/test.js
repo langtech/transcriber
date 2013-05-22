@@ -8,6 +8,7 @@ jQuery(function($) {
 	var play_pos = 0.0;
 	var sel_beg = 0.0;
 	var sel_dur = 0.0;
+	var sel_waveform;
 
 	$('#play-btn').on('click', function(e) {
 		if ($(this).text() == 'Play') {
@@ -34,12 +35,12 @@ jQuery(function($) {
 	});
 
 	var ebus = new ldc.event.EventBus;
-	var table = new ldc.datamodel.Table(['offset','length','transcript'], ebus);
+	var table = new ldc.datamodel.Table(['waveform', 'offset','length','transcript'], ebus);
 	var textedit = new ldc.textdisplay.TextEdit('textpanel', ebus);
 
 
 	$('#create-seg-btn').on('click', function() {
-		var data = {offset:sel_beg, length:sel_dur};
+		var data = {offset:sel_beg, length:sel_dur, waveform:sel_waveform};
 		var rid = ldc.datamodel.Table.getNewRid();
 		var e = new ldc.datamodel.TableAddRowEvent(main, rid, data);
 		ebus.queue(e);
@@ -56,17 +57,13 @@ jQuery(function($) {
 		handleEvent: function(e) {
 			sel_beg = e.args().beg;
 			sel_dur = e.args().dur;
+			sel_waveform = e.args().waveform;
 			$('#sel-beg').text(Math.round(sel_beg * 10000) / 10000);
 			$('#sel-dur').text(Math.round(sel_dur * 10000) / 10000);
 
 			$('#create-seg-btn').prop('disabled', sel_dur < 0.00005);
 		}
 	});
-
-	// initialize the data model
-	table.addRow([0.0, 2.0, "hello"]);
-	table.addRow([2.1, 0.9, "hi"]);
-	table.addRow([3.5, 0.7, "how are you?"]);
 
 	// a hook for debugger
 	G = {

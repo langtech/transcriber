@@ -22,6 +22,13 @@ goog.require('goog.dom');
  * @param {number} channel A channel of the buffer to display
  */
 ldc.waveform.Waveform = function(buffer, canvas, channel) {
+    /**
+     * Unique ID of the waveform.
+     * @property {Number} id
+     * @readonly
+     */
+    this.id = counter++;
+
     this.buffer = buffer;
     /**
      * @property {HTMLCanvasElement} canvas
@@ -37,6 +44,8 @@ ldc.waveform.Waveform = function(buffer, canvas, channel) {
     // seconds per pixel
     this._spx = -1;
 }
+
+counter = 0;
 
 /**
  * Returns the width of the canvas.
