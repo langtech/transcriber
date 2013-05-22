@@ -264,6 +264,11 @@ ldc.waveform.RichWaveform.prototype.handleEvent = function(e) {
 			type = 'secondary';
 			this.unlinkRegion(this.selection_id);
 		}
+		if (arg.beg + arg.dur < this.windowStartTime() ||
+			arg.beg > arg.beg + arg.dur) {
+			var t = arg.beg + (arg.dur / 2) - (this.windowDuration() / 2.0);
+			this.display(t < 0 ? 0 : t);
+		}
 		this.update_selection_(type, arg.beg, arg.dur, arg.waveform);
 	}
 }
@@ -281,6 +286,8 @@ ldc.waveform.RichWaveform.prototype.render_region_ = function(r) {
 		r.html.style.display = 'none';
 	}
 	else {
+		var x0 = x;
+		var y0 = y;
 		if (x < 0) {
 			x = 0;
 		}
@@ -298,6 +305,12 @@ ldc.waveform.RichWaveform.prototype.render_region_ = function(r) {
 			r.html.style.borderStyle = 'solid';
 			r.html.style.borderWidth = '1px';
 			r.html.style.borderColor = 'black';
+			if (x0 < 0) {
+				r.html.style.borderLeftStyle = 'none';
+			}
+			if (y0 > this.canvas.width) {
+				r.html.style.borderRightStyle = 'none';
+			}
 		}
 		else {
 			r.html.style.borderStyle = '';
