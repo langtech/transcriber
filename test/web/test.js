@@ -60,8 +60,17 @@ jQuery(function($) {
 			sel_waveform = e.args().waveform;
 			$('#sel-beg').text(Math.round(sel_beg * 10000) / 10000);
 			$('#sel-dur').text(Math.round(sel_dur * 10000) / 10000);
-
 			$('#create-seg-btn').prop('disabled', sel_dur < 0.00005);
+		}
+	});
+	ebus.connect(ldc.waveform.WaveformSelectEvent, {
+		handleEvent: function(e) {
+			sel_beg = e.args().beg;
+			sel_dur = e.args().dur;
+			sel_waveform = e.args().waveform;
+			$('#sel-beg').text(Math.round(sel_beg * 10000) / 10000);
+			$('#sel-dur').text(Math.round(sel_dur * 10000) / 10000);
+			$('#create-seg-btn').prop('disabled', true);
 		}
 	});
 
