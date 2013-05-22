@@ -9,6 +9,12 @@ jQuery(function($) {
 	var sel_beg = 0.0;
 	var sel_dur = 0.0;
 	var sel_waveform;
+	var sel_rid;
+
+	var ebus = new ldc.event.EventBus;
+	var table = new ldc.datamodel.Table(['waveform', 'offset','length','transcript'], ebus);
+	var textedit = new ldc.textdisplay.TextEdit('textpanel', ebus);
+	var waveforms = {};
 
 	$('#play-btn').on('click', function(e) {
 		if ($(this).text() == 'Play') {
@@ -34,11 +40,6 @@ jQuery(function($) {
 		$('.dropdown-menu').dropdown();
 	});
 
-	var ebus = new ldc.event.EventBus;
-	var table = new ldc.datamodel.Table(['waveform', 'offset','length','transcript'], ebus);
-	var textedit = new ldc.textdisplay.TextEdit('textpanel', ebus);
-
-
 	$('#create-seg-btn').on('click', function() {
 		var data = {offset:sel_beg, length:sel_dur, waveform:sel_waveform};
 		var rid = ldc.datamodel.Table.getNewRid();
@@ -46,6 +47,15 @@ jQuery(function($) {
 		ebus.queue(e);
 	});
 
+	$('#remove-seg-btn').on('click', function() {
+		var wid = table.getCell(sel_rid, 'waveform');
+		var waveform = waveforms[wid];
+		waveform.unlinkRegion(waveform.getSelection().id);
+		var e = new ldc.datamodel.TableDeleteRowEvent(main, sel_rid);
+		ebus.queue(e);
+		$('#remove-seg-btn').prop('disabled', true);
+		$('#create-seg-btn').prop('disabled', false);
+	});
 
 	// initialize event bus connections
 	ebus.connect(ldc.waveform.WaveformCursorEvent, {
@@ -58,9 +68,11 @@ jQuery(function($) {
 			sel_beg = e.args().beg;
 			sel_dur = e.args().dur;
 			sel_waveform = e.args().waveform;
+			sel_rid = null;
 			$('#sel-beg').text(Math.round(sel_beg * 10000) / 10000);
 			$('#sel-dur').text(Math.round(sel_dur * 10000) / 10000);
 			$('#create-seg-btn').prop('disabled', sel_dur < 0.00005);
+			$('#remove-seg-btn').prop('disabled', true);
 		}
 	});
 	ebus.connect(ldc.waveform.WaveformSelectEvent, {
@@ -68,9 +80,11 @@ jQuery(function($) {
 			sel_beg = e.args().beg;
 			sel_dur = e.args().dur;
 			sel_waveform = e.args().waveform;
+			sel_rid = e.args().rid;
 			$('#sel-beg').text(Math.round(sel_beg * 10000) / 10000);
 			$('#sel-dur').text(Math.round(sel_dur * 10000) / 10000);
 			$('#create-seg-btn').prop('disabled', true);
+			$('#remove-seg-btn').prop('disabled', false);
 		}
 	});
 
@@ -93,6 +107,8 @@ jQuery(function($) {
 		var $scrollbar = $('#scrollbar');
 		var waveform = new ldc.waveform.RichWaveform(buffer, $canvas[0], 0, ebus);
 		var waveform2 = new ldc.waveform.RichWaveform(buffer, $canvas2[0], 1, ebus);
+		waveforms[waveform.id] = waveform;
+		waveforms[waveform2.id] = waveform2;
 		var wset = new ldc.waveform.WaveformSet;
 		wset.addWaveform(waveform);
 		wset.addWaveform(waveform2);

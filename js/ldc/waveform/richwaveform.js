@@ -37,6 +37,7 @@ ldc.waveform.RichWaveform = function(buffer, canvas, channel, ebus) {
 	// wrap the canvas element
 	this.container = goog.dom.createElement('div');
 	this.container.style.position = 'relative';
+	this.canvas.style.cursor = 'crosshair';
 	goog.dom.insertSiblingAfter(this.container, canvas);
 	goog.dom.appendChild(this.container, canvas);
 
@@ -87,6 +88,7 @@ goog.inherits(ldc.waveform.RichWaveform, ldc.waveform.Waveform);
  */
 ldc.waveform.RichWaveform.prototype.addRegion = function(t, dur, color) {
 	var div = goog.dom.createElement('div');
+	div.style.cursor = 'crosshair';
 	goog.dom.appendChild(this.container, div);
 	goog.events.listen(div, 'dragstart', function(e) {
 		e.preventDefault();
@@ -168,6 +170,7 @@ ldc.waveform.RichWaveform.prototype.unlinkRegion = function(id) {
 	if (this.regions.hasOwnProperty(id)) {
 		var r = this.regions[id];
 		delete r.rid;
+		this.render_region_(r);
 	}
 }
 
@@ -180,8 +183,7 @@ ldc.waveform.RichWaveform.prototype.unlinkRegion = function(id) {
  */
 ldc.waveform.RichWaveform.prototype.getRegion = function(id) {
 	if (this.regions.hasOwnProperty(id)) {
-		var r = this.regions[id];
-		return new Region(r);
+		return this.regions[id];
 	}
 }
 
@@ -201,7 +203,7 @@ ldc.waveform.RichWaveform.prototype.getCursor = function() {
  * @method getSelection
  * @return {region} A region object representing the region.
  */
-ldc.waveform.RichWaveform.prototype.getRegion = function() {
+ldc.waveform.RichWaveform.prototype.getSelection = function() {
 	return this.getRegion(this.selection_id);
 }
 
@@ -342,41 +344,64 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 	// listen on mouse events
 	var mousedown = false;
 	var selection_anchor = 0;
+	var sel = this.getSelection();
+	var edge = null;
 
 	goog.events.listen(document.body, 'mousemove', function(e) {
+		var wbeg = this.windowStartTime();
 		var e1 = this.container.getBoundingClientRect();
 		var e2 = e.target.getBoundingClientRect();
 		var x = e2.left - e1.left + e.offsetX;
-		var t = this.p2t(x) + this.windowStartTime();
+		var t = Math.max(Math.min(this.p2t(x) + wbeg, this.buffer.len_t), 0);
+
+		// update cursor
+		this.updateRegion(this.cursor_id, t);
+
 		// update selection
 		if (mousedown) {
 			var beg = Math.min(t, selection_anchor);
 			var dur = Math.max(t, selection_anchor) - beg;
-			this.unlinkRegion(this.selection_id);
+			if (edge == null) {
+				this.unlinkRegion(this.selection_id);
+			}
 			this.update_selection_('primary', beg, dur);
-			if (this.ebus) {
+			if (this.ebus != null) {
+				if (beg + dur > this.buffer.len_t) {
+					dur = this.buffer.len_t - beg;
+				}
 				this.ebus.queue(new ldc.waveform.WaveformRegionEvent(this, beg, dur, this.id));
 			}
 		}
-		// update cursor
-		this.updateRegion(this.cursor_id, t);
 
 		if (this.ebus) {
-			this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, t));
+			var wdur = this.windowDuration();
+			var flag = false;
 
+			// scroll waveform & signal new position
 			if (mousedown) {
 				if (x < 0) {
-					if (t > 0.0) {
-						var beg = this.windowStartTime() - this.windowDuration() / 50.0;
+					if (wbeg > 0) {
+						var beg = Math.max(wbeg - wdur / 50.0, 0);
 						this.display(beg);
 						this.ebus.queue(new ldc.waveform.WaveformWindowEvent(this, beg));
+						this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, beg));
+						flag = true;
 					}
 				}
 				else if (x >= this.canvas.width) {
-					var beg = this.windowStartTime() + this.windowDuration() / 50.0;
-					this.display(beg);
-					this.ebus.queue(new ldc.waveform.WaveformWindowEvent(this, beg));
+					if (wbeg + wdur < this.buffer.len_t) {
+						var beg = Math.min(wbeg + wdur / 50.0, this.buffer.len_t - wdur);
+						this.display(beg);
+						this.ebus.queue(new ldc.waveform.WaveformWindowEvent(this, beg));
+						this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, beg + wdur));
+						flag = true;
+					}
 				}
+			}
+
+			// signal cursor position
+			if (flag == false) {
+				this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, t));
 			}
 		}
 	}, false, this);
@@ -384,22 +409,60 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 	goog.events.listen(this.container, 'mousedown', function(e) {
 		if (e.button == 0) {  // left mouse button
 			var x = e.target.offsetLeft + e.offsetX;
-			if (x >= 0 && x < this.canvas.width) {
-				var t = this.p2t(x) + this.windowStartTime();
+			var t = this.p2t(x) + this.windowStartTime();
+
+			if (x < 0 || x >= this.canvas.widt || t < 0 || t > this.buffer.len_t) {
+				// out of range
+				return;
+			}
+
+			if (edge != null) {
+				// resizing existing region
+				selection_anchor = edge;
+			}
+			else {
+				// starting a new region
 				this.unlinkRegion(this.selection_id);
 				this.update_selection_('primary', t, 0);
 				if (this.ebus) {
 					this.ebus.queue(new ldc.waveform.WaveformRegionEvent(this, t, 0));
 				}
-				mousedown = true;
 				selection_anchor = t;
 			}
+			mousedown = true;
 		}
 	}, false, this);
 
+	goog.events.listen(sel.html, 'mousemove', function(e) {
+		if (e.offsetX < 2) {
+			sel.html.style.cursor = "w-resize";
+		}
+		else if (e.offsetX >= sel.html.offsetWidth - 2) {
+			sel.html.style.cursor = "e-resize";
+		}
+		else {
+			sel.html.style.cursor = this.canvas.style.cursor;
+		}
+	}, false, this);
+
+	goog.events.listen(sel.html, 'mousedown', function(e) {
+		if (e.offsetX < 2) {
+			edge = sel.pos + sel.dur;
+		}
+		else if (e.offsetX >= sel.html.offsetWidth - 2) {
+			edge = sel.pos;
+		}
+	});
+
 	goog.events.listen(document.body, 'mouseup', function(e) {
 		mousedown = false;
-	});
+		if (edge != null && sel.rid != null && this.ebus != null) {
+			var u = {offset:sel.pos, length:sel.dur};
+			var ev = new ldc.datamodel.TableUpdateRowEvent(this, sel.rid, u);
+			this.ebus.queue(ev);
+		}
+		edge = null;
+	}, false, this);
 }
 
 })();
