@@ -25,13 +25,13 @@ ldc.textdisplay.SegmentEdit = function(row) {
 	var html_rid = make_html_id(rid);
 	var dom = goog.dom.getElement(html_rid);
 	if (dom == null) {
-		dom = goog.dom.createDom('div', {'class':'segmentedit', id: html_rid},
-			goog.dom.createDom('div', {
-				'class': 'segmentedit-textwidget',
-				value: row.value('transcript'),
-				contentEditable: 'true'
-			}, row.value('transcript'))
-		);
+		var sub = goog.dom.createDom('div', {
+			'class': 'segmentedit-textwidget',
+			value: row.value('transcript'),
+			contentEditable: 'true'
+		});
+		var attr = {class: 'segmentedit', id: html_rid};
+		dom = goog.dom.createDom('div', attr, sub);
 		dom.style.backgroundColor = '#EEEEFF';
 		dom.style.margin = '1px';
 	}
@@ -61,6 +61,13 @@ ldc.textdisplay.SegmentEdit.prototype.setText = function(text) {
  */
 ldc.textdisplay.SegmentEdit.prototype.dom = function() {
 	return this._dom;
+}
+
+/**
+ * Give broswer focus to the text widget.
+ */
+ldc.textdisplay.SegmentEdit.prototype.focus = function() {
+	goog.dom.getFirstElementChild(this._dom).focus();
 }
 
 /**

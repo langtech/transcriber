@@ -108,14 +108,14 @@ ldc.textdisplay.TextEdit.prototype.setTable = function(table) {
  * @param {Event} event
  */
 ldc.textdisplay.TextEdit.prototype.handleEvent = function(event) {
-	if (event.constructor == ldc.datamodel.TableUpdateRowEvent) {
+	if (event instanceof ldc.datamodel.TableUpdateRowEvent) {
 		var arg = event.args();  // update object
 		var se = this.findSegment(arg.rid);
-		if (se) {
-			se.setText(arg.data.message);
+		if (se != null && arg.data.hasOwnProperty('transcript')) {
+			se.setText(arg.data.transcript);
 		}
 	}
-	else if (event.constructor == ldc.datamodel.TableAddRowEvent) {
+	else if (event instanceof ldc.datamodel.TableAddRowEvent) {
 		var arg = event.args();
 		var smax = this.rid2se.getCount() > 0 ? this.rid2se.getMaximum() : null;
 		var s = {
@@ -134,6 +134,15 @@ ldc.textdisplay.TextEdit.prototype.handleEvent = function(event) {
 		else {
 			this.add_seg_(arg.rid);
 		}
+		if (this.ebus != null) {
+			var e = new ldc.waveform.WaveformSelectEvent(
+				this, arg.data.offset, arg.data.length, arg.data.waveform, arg.rid
+			);
+			this.ebus.queue(e);
+		}
+	}
+	else if (event instanceof ldc.datamodel.TableDeleteRowEvent) {
+		this.remove_seg_(event.args().rid);
 	}
 }
 
@@ -158,9 +167,25 @@ ldc.textdisplay.TextEdit.prototype.add_seg_ = function(rid, before) {
 			goog.dom.appendChild(this.container, se.dom());
 		}
 		this.rid2se.add(seg);
+		se.focus();
 	}
 }
 
+/**
+ * Take the segment out of display and internal index.
+ *
+ * @method remove_seg_
+ * @private
+ * @param {Number} rid
+ */
+ldc.textdisplay.TextEdit.prototype.remove_seg_ = function(rid) {
+	if (this.table) {
+		var seg = new ldc.datamodel.TableRow(this.table, rid);
+		var se = new ldc.textdisplay.SegmentEdit(seg);
+		this.rid2se.remove(seg);
+		goog.dom.removeNode(se.dom());
+	}
+}
 
 // Returns -1, 0, or 1 respectively if a < b, a == b, or a > b.
 function comp(a, b) {

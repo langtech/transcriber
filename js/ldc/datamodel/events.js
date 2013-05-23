@@ -12,7 +12,7 @@ goog.require('ldc.event.Event');
  * An event signaling that there has been changes to the Table.
  *
  * @class TableUpdateRowEvent
- * @extends Event
+ * @extends event.Event
  * @constructor
  * @param {Object} source Object that is the source of the event.
  * @param {Number} rid Row ID of the row having the changes.
@@ -29,7 +29,7 @@ ldc.datamodel.TableUpdateRowEvent.type = ldc.event.Event.newTypeId();
  * An event signaling that a new row has been added to the Table.
  *
  * @class TableAddRowEvent
- * @extends Event
+ * @extends event.Event
  * @constructor
  * @param {Object} source Object that is the source of the event.
  * @param {Number} rid Row ID of the added row.
@@ -39,14 +39,24 @@ ldc.datamodel.TableAddRowEvent = function(source, rid, data) {
 	goog.base(this, source, {rid:rid, data:data});
 }
 goog.inherits(ldc.datamodel.TableAddRowEvent, ldc.event.Event);
-
 ldc.datamodel.TableAddRowEvent.type = ldc.event.Event.newTypeId();
+
+/**
+ * Returns the arguments of the event.
+ *
+ * @method args
+ * @return {Object} Object with following properties.
+ *
+ *   - rid: id of table row to update
+ *   - data: key-value pairs where keys are the fields of data model
+ */
+
 
 /**
  * An event signaling that a row has been deleted from the Table.
  *
  * @class TableDeleteRowEvent
- * @extends Event
+ * @extends event.Event
  * @constructor
  * @param {Object} source Object that is the source of the event.
  * @param {Number} rid Row ID of the deleted row.

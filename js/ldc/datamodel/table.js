@@ -147,7 +147,7 @@ ldc.datamodel.Table.prototype.getCell = function(rid, field) {
  */
 ldc.datamodel.Table.prototype.updateRow = function(rid, update) {
 	var row = this.rows[rid];
-	if (row) {
+	if (row != null) {
 		for (var i=0; i < this.header_.length; ++i) {
 			var k = this.header_[i];
 			if (update.hasOwnProperty(k)) {
