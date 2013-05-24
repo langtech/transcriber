@@ -29,12 +29,24 @@ ldc.waveform.Waveform = function(buffer, canvas, channel) {
      */
     this.id = counter++;
 
+    /**
+     * WaveformBuffer object associated with this Waveform.
+     * @property {WaveformBuffer} buffer
+     * @readonly
+     */
     this.buffer = buffer;
+
     /**
      * @property {HTMLCanvasElement} canvas
-     * @protected
+     * @readonly
      */
     this.canvas = canvas;
+
+    /**
+     * Channel of the rendered WaveformBuffer
+     * @property {Number} channel
+     * @readonly
+     */
     this.channel = channel;
 
     // TODO: paramater sanity check
