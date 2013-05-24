@@ -65,6 +65,7 @@ ldc.textdisplay.SegmentEdit.prototype.dom = function() {
 
 /**
  * Give broswer focus to the text widget.
+ * @method focus
  */
 ldc.textdisplay.SegmentEdit.prototype.focus = function() {
 	goog.dom.getFirstElementChild(this._dom).focus();
