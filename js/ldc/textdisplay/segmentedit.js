@@ -8,6 +8,8 @@
 goog.provide("ldc.textdisplay.SegmentEdit");
 goog.require('goog.dom');
 
+var UI_CLASS = 'segmentedit';
+var UI_TEXT_CLASS = 'segmentedit-textwidget';
 /**
  * A widget displaying a Segment object. SegmentEdit modifies data model.
  * The following fields are modified by SegmentEdit.
@@ -20,22 +22,38 @@ goog.require('goog.dom');
  */
 ldc.textdisplay.SegmentEdit = function(row) {
 	this.trow = row;
+	this.ui_style = {
+		text_bg_color: '#EEEEFF',
+		margin: '5px'
+	}
 
 	var rid = row.rid();
 	var html_rid = make_html_id(rid);
 	var dom = goog.dom.getElement(html_rid);
 	if (dom == null) {
-		var sub = goog.dom.createDom('div', {
-			'class': 'segmentedit-textwidget',
-			value: row.value('transcript'),
-			contentEditable: 'true'
-		});
-		var attr = {class: 'segmentedit', id: html_rid};
-		dom = goog.dom.createDom('div', attr, sub);
-		dom.style.backgroundColor = '#EEEEFF';
-		dom.style.margin = '1px';
+		var bullet = goog.dom.createDom('div', {
+			style: 'display: table-cell'
+		}, '\u2022\u00a0\u00a0');
+		var text = goog.dom.createDom('div', {
+			class: UI_TEXT_CLASS,
+			contentEditable: 'true',
+			style: 'display: table-cell; width: 100%'
+		}, row.value('transcript'));
+		var wrapper = goog.dom.createDom('div', {
+			style: 'display: table-row'
+		}, bullet, text);
+		dom = goog.dom.createDom('div', {
+			class: UI_CLASS,
+			id: html_rid
+		}, wrapper);
+		text.style.backgroundColor = this.ui_style.text_bg_color;
+		dom.style.margin = this.ui_style.margin;
 	}
 	this._dom = dom;
+}
+
+function textwidget(el) {
+	return goog.dom.getElementByClass(UI_TEXT_CLASS, el);
 }
 
 /**
@@ -43,7 +61,7 @@ ldc.textdisplay.SegmentEdit = function(row) {
  * @return {String}
  */
 ldc.textdisplay.SegmentEdit.prototype.text = function() {
-	return goog.dom.getFirstElementChild(this._dom).textContent;
+	return textwidget(this._dom).textContent;
 }
 
 /**
@@ -51,7 +69,7 @@ ldc.textdisplay.SegmentEdit.prototype.text = function() {
  * @param {String} text
  */
 ldc.textdisplay.SegmentEdit.prototype.setText = function(text) {
-	goog.dom.getFirstElementChild(this._dom).textContent = text;
+	textwidget(this._dom).textContent = text;
 }
 
 /**
@@ -68,7 +86,7 @@ ldc.textdisplay.SegmentEdit.prototype.dom = function() {
  * @method focus
  */
 ldc.textdisplay.SegmentEdit.prototype.focus = function() {
-	goog.dom.getFirstElementChild(this._dom).focus();
+	textwidget(this._dom).focus();
 }
 
 /**
@@ -128,6 +146,12 @@ ldc.textdisplay.SegmentEdit.EventType = {
 	 * @final
 	 */
 	CHANGE: 'change',
+	/**
+	 * @property EventType.SELECT
+	 * @type String
+	 * @static
+	 * @final
+	 */
 	SELECT: 'select'
 };
 

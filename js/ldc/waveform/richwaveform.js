@@ -13,6 +13,8 @@ goog.require('goog.style');
 goog.require('goog.object');
 goog.require('goog.events');
 
+UNSELECTABLE_CSS_ADDED = false;
+
 /**
  * Waveform with regions on top of it. Regions are added using the addRegion
  * method. It has a cursor that follows mouse movement, which also updates
@@ -35,12 +37,24 @@ ldc.waveform.RichWaveform = function(buffer, canvas, channel, ebus) {
 	goog.base(this, buffer, canvas, channel);
 
 	// wrap the canvas element
-	this.container = goog.dom.createElement('div');
+	this.container = goog.dom.createDom('div', {class:'unselectable'});
 	this.container.style.position = 'relative';
 	this.canvas.style.cursor = 'crosshair';
 	goog.dom.insertSiblingAfter(this.container, canvas);
 	goog.dom.appendChild(this.container, canvas);
-	this.container.style.width = this.canvas.width + 'px';
+
+	if (UNSELECTABLE_CSS_ADDED == false) {
+		goog.cssom.addCssText(" \
+			.unselectable { \
+				-moz-user-select: -moz-none; \
+	    		-khtml-user-select: none; \
+	    		-webkit-user-select: none; \
+	    		-o-user-select: none; \
+	    		user-select: none; \
+	   		} \
+		");
+		UNSELECTABLE_CSS_ADDED = true;
+	}
 
 	this.regions = {}
 	// Region is an object representing a region in the waveform. It has
@@ -346,76 +360,75 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 	var mousedown = false;
 	var selection_anchor = 0;
 	var sel = this.getSelection();
-	var edge = null;  // mouse position when it is on an edge
+	var edge = null;
 
 	goog.events.listen(document.body, 'mousemove', function(e) {
 		var wbeg = this.windowStartTime();
 		var wdur = this.windowDuration();
 		var e1 = this.container.getBoundingClientRect();
-		var e2 = e.target.getBoundingClientRect();
-		var x = e2.left - e1.left + e.offsetX;
-		var t = Math.min(Math.max(wbeg + this.p2t(x), 0), this.buffer.len_t);
-		var t1 = t;  // new cursor position if window is scrolled by cursor
-		             // going out of range during selection
-		var wbeg1 = wbeg;  // new window start time if window needs to be scrolled
+		var x = e.clientX - e1.left;
+		var t = Math.max(Math.min(this.p2t(x) + wbeg, this.buffer.len_t), 0);
 
-		if (x < 0) {
-			if (wbeg > 0) {
-				t = wbeg;
-				t1 = Math.max(wbeg - wdur * 0.02, 0);
-				wbeg1 = t1;
-			}
-			else {
-				t = 0;
-				t1 = 0;
-			}
-		}
-		else if (x >= this.canvas.width) {
-			if (wbeg + wdur < this.buffer.len_t) {
-				t = wbeg + wdur;
-				t1 = Math.min(wbeg + wdur * 1.02, this.buffer.len_t);
-				wbeg1 = t1 - wdur;
-			}
-			else {
-				t = this.buffer.len_t;
-				t1 = this.buffer.len_t;
-			}
-		}
+		// update cursor
+		this.updateRegion(this.cursor_id, t);
 
 		// update selection
 		if (mousedown) {
-			if (wbeg != wbeg1) {
-				// scroll window
-				this.display(wbeg1);
-				if (this.ebus) {
-					this.ebus.queue(new ldc.waveform.WaveformWindowEvent(this, wbeg1));
-				}
-				t = t1;  // use new cursor position since window scrolled
-			}
 			var beg = Math.min(t, selection_anchor);
 			var dur = Math.max(t, selection_anchor) - beg;
+			if (edge == null) {
+				this.unlinkRegion(this.selection_id);
+			}
 			this.update_selection_('primary', beg, dur);
-			if (this.ebus) {
+			if (this.ebus != null) {
+				if (beg + dur > this.buffer.len_t) {
+					dur = this.buffer.len_t - beg;
+				}
 				this.ebus.queue(new ldc.waveform.WaveformRegionEvent(this, beg, dur, this.id));
 			}
 		}
 
-		this.updateRegion(this.cursor_id, t);
 		if (this.ebus) {
-			this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, t));
-		}
+			var flag = false;
 
+			// scroll waveform & signal new position
+			if (mousedown) {
+				if (x < 0) {
+					if (wbeg > 0) {
+						var beg = Math.max(wbeg - wdur / 50.0, 0);
+						this.display(beg);
+						this.ebus.queue(new ldc.waveform.WaveformWindowEvent(this, beg));
+						this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, beg));
+						flag = true;
+					}
+				}
+				else if (x >= this.canvas.width) {
+					if (wbeg + wdur < this.buffer.len_t) {
+						var beg = Math.min(wbeg + wdur / 50.0, this.buffer.len_t - wdur);
+						this.display(beg);
+						this.ebus.queue(new ldc.waveform.WaveformWindowEvent(this, beg));
+						this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, beg + wdur));
+						flag = true;
+					}
+				}
+			}
+
+			// signal cursor position
+			if (flag == false) {
+				this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, t));
+			}
+		}
 	}, false, this);
 
 	goog.events.listen(this.container, 'mousedown', function(e) {
-		// Assumes that this.container and this.canvas are completely overlap.
 		if (e.button == 0) {  // left mouse button
 			var x = e.target.offsetLeft + e.offsetX;
 			var t = this.p2t(x) + this.windowStartTime();
 
-			if (t < 0 || t > this.buffer.len_t) {
-				return
-			}			
+			if (x < 0 || x >= this.canvas.widt || t < 0 || t > this.buffer.len_t) {
+				// out of range
+				return;
+			}
 
 			if (edge != null) {
 				// resizing existing region

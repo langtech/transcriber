@@ -7,7 +7,7 @@
     "url": "http://github.com/langtech/transcriber"
   },
   "devDependencies": {
-    "testacular": "https://github.com/hleeldc/testacular/blob/v0.6.0-hleeldc/testacular-0.6.0-hleeldc.tgz?raw=true",
+    "testacular": "https://github.com/hleeldc/karma/blob/v0.6.0-hleeldc/testacular-0.6.0-hleeldc.tgz?raw=true",
     "yuidocjs": "*"
   }
 }
