@@ -57,7 +57,7 @@ ldc.waveform.Waveform = function(buffer, canvas, channel) {
     this._spx = -1;
 }
 
-counter = 0;
+var counter = 0;
 
 /**
  * Returns the width of the canvas.

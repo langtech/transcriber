@@ -57,19 +57,27 @@ function textwidget(el) {
 }
 
 /**
+ * Returns the text content of the widget.
+ *
  * @method text
  * @return {String}
  */
 ldc.textdisplay.SegmentEdit.prototype.text = function() {
+	console.log(this._dom.textContent);
 	return textwidget(this._dom).textContent;
 }
 
 /**
- * @method setText
- * @param {String} text
+ * Update data displayed on the widget.
+ *
+ * @method update
+ * @param {Object} update Key-value pairs. Currently, only 'transcript'
+ *   property is accepted. Other properties are ignored.
  */
-ldc.textdisplay.SegmentEdit.prototype.setText = function(text) {
-	textwidget(this._dom).textContent = text;
+ldc.textdisplay.SegmentEdit.prototype.update = function(update) {
+	if (update.hasOwnProperty('transcript')) {
+		textwidget(this._dom).textContent = update.transcript;
+	}
 }
 
 /**
@@ -121,7 +129,7 @@ ldc.textdisplay.SegmentEdit.installEventListener = function(subject, listener) {
 				browserEvent: event,
 				rid: parse_html_id(dom.id),
 				data: {
-					transcript: event.target.textContent
+					transcript: textwidget(event.target).textContent
 				}
 			});
 		}

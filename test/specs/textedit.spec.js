@@ -27,7 +27,7 @@ describe("TextEdit", function() {
 
 		// find the event source (textarea element) and change the text
 		var se = G.textedit.findSegment(G.rid1);
-		se.setText(text);
+		se.update({transcript:text});
 
 		// emulate browser event
 		var e = new goog.testing.events.Event('blur', se.dom());

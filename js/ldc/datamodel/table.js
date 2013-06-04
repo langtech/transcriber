@@ -119,12 +119,34 @@ ldc.datamodel.Table.prototype.find = function(field, matcher) {
 }
 
 /**
+ * Run the given callback function for each row of the table filtered by
+ * the matcher function. If matcher is not given, every row is applied to the
+ * callback.
+ *
+ * @method forEach
+ * @param {Function} callback Function taking a TableRow object.
+ * @param {Function} [matcher] A filter taking a TableRow object.
+ */
+ldc.datamodel.Table.prototype.forEach = function(callback, matcher) {
+	var f = matcher == null ? function() {return true} : matcher;
+	for (var k in this.rows) {
+		if (this.rows.hasOwnProperty(k)) {
+			var trow = this.getRow(k);
+			if (f(trow) == true) {
+				callback(trow);
+			}
+		}
+	}
+}
+
+
+/**
  * @method getRow
  * @param {Number} rid Row index.
  * @return {Object}
  */
 ldc.datamodel.Table.prototype.getRow = function(rid) {
-	return _copy_row(this.rows[rid]);
+	return new ldc.datamodel.TableRow(this, rid);
 }
 
 /**
@@ -210,15 +232,5 @@ ldc.datamodel.Table.prototype.handleEvent = function(event) {
 	}
 }
 
-
-// private utilitty functions
-
-var _copy_row = function(row) {
-	var newrow = [];
-	for (var i=0; i < row.length; ++i) {
-		newrow.push(row[i]);
-	}
-	return newrow;
-}
 
 })();

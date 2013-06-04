@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+	<title>
+	</title>
+	<link href="../../js/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+	<script src="../../js/jquery-1.9.1.min.js"></script>
+	<script src="../../js/jQuery.jPlayer.2.3.0/jquery.jplayer.min.js"></script>
+	<script src="../../js/closure-library/closure/goog/base.js"></script>
+	<script src="../../js/ldc/deps.js"></script>
+	<script src="../../js/components/q/q.min.js"></script>
+	<script src="transcriber.js"></script>
+</head>
+<body>
+	<div id="players">
+		<div id="player"></div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="span2"></div>
+		<div class="span10">
+			<div class="row-fluid">
+					<div class="span8">
+						<div class="btn-group">
+							<button id="play-btn" class="btn" disabled
+								data-play-text="Pause"
+								data-pause-text="Resume">
+								Play
+							</button>
+							<button id="stop-btn" class="btn" disabled>Stop</button>
+							<button id="create-seg-btn" class="btn" disabled>
+								Create Segment
+							</button>
+							<button id="remove-seg-btn" class="btn" disabled>
+								Remove Segment
+							</button>
+							<button id="play-rspk-btn" class="btn" disabled
+								data-play-text="Stop">
+								Play Respeaking
+							</button>
+						</div>
+					</div>
+					<div class="span4">
+						<span id="sel-beg"></span> |
+						<span id="sel-dur"></span> |
+						<span id="pos"></span>
+					</div>
+			</div>
+
+			<br/>
+
+			<div class="row-fluid">
+				<div>
+					<!-- waveform of the original recording -->
+					<canvas id="waveform"></canvas>
+					<div id="scrollbar"></div>
+				</div>
+			</div>
+
+			<br/>
+
+			<div class="row-fluid" id="swimlanes"></div>
+
+			<br/>
+
+			<!-- the library will convert this to a text widget -->
+			<div id="textpanel"></div>
+		</div>
+
+	</div>
+	<script src="../../js/bootstrap/js/bootstrap.min.js"></script>
+</body>
+</html>
