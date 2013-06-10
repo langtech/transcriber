@@ -65,11 +65,13 @@ ldc.textdisplay.SegmentEdit.prototype.text = function() {
 }
 
 /**
- * @method setText
- * @param {String} text
+ * @method update
+ * @param {Object} update Key-value pairs
  */
-ldc.textdisplay.SegmentEdit.prototype.setText = function(text) {
-	textwidget(this._dom).textContent = text;
+ldc.textdisplay.SegmentEdit.prototype.update = function(update) {
+	if (update.hasOwnProperty('transcript')) {
+		textwidget(this._dom).textContent = update.transcript;
+	}
 }
 
 /**

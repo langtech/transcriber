@@ -85,12 +85,11 @@ ldc.textdisplay.TextEdit = function(id, eventBus, segFilter) {
 ldc.textdisplay.TextEdit.prototype.setTable = function(table) {
 	this.table = table;
 	var that = this;
-	table.find().forEach(function(rid) {
-		var segment = new ldc.datamodel.TableRow(table, rid);
+	table.forEach(function(segment) {
 		var se = new ldc.textdisplay.SegmentEdit(segment);
 		goog.dom.appendChild(that.container, se.dom());
 		that.rid2se.add(segment);
-	});
+	}, this.filter);
 }
 
 /**
@@ -111,12 +110,18 @@ ldc.textdisplay.TextEdit.prototype.handleEvent = function(event) {
 	if (event instanceof ldc.datamodel.TableUpdateRowEvent) {
 		var arg = event.args();  // update object
 		var se = this.findSegment(arg.rid);
-		if (se != null && arg.data.hasOwnProperty('transcript')) {
-			se.setText(arg.data.transcript);
+		if (se != null) {
+			se.update(arg.data);
 		}
 	}
 	else if (event instanceof ldc.datamodel.TableAddRowEvent) {
 		var arg = event.args();
+		if (this.table != null) {
+			var segment = new ldc.datamodel.TableRow(this.table, arg.rid);
+			if (this.filter(segment) == false) {
+				return;
+			}
+		}
 		var smax = this.rid2se.getCount() > 0 ? this.rid2se.getMaximum() : null;
 		var s = {
 			value: function(k) { return arg.data[k]; },

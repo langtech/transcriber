@@ -369,55 +369,49 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 		var x = e.clientX - e1.left;
 		var t = Math.max(Math.min(this.p2t(x) + wbeg, this.buffer.len_t), 0);
 
-		// update cursor
-		this.updateRegion(this.cursor_id, t);
-
 		// update selection
 		if (mousedown) {
-			var beg = Math.min(t, selection_anchor);
-			var dur = Math.max(t, selection_anchor) - beg;
+			var wbeg1 = wbeg;  // new window start time
+
+			if (x < 0) {
+				if (wbeg > 0) {
+					wbeg1 = t = Math.max(wbeg - wdur / 50, 0);
+					this.display(wbeg1);
+				}
+			}
+			else if (x >= this.canvas.width) {
+				if (wbeg + wdur < this.buffer.len_t) {
+					t = Math.min(wbeg + wdur * 1.02, this.buffer.len_t);
+					wbeg1 = t - wdur;
+					this.display(wbeg1);
+				}
+			}
+
 			if (edge == null) {
 				this.unlinkRegion(this.selection_id);
 			}
+
+			var beg = Math.min(t, selection_anchor);
+			var dur = Math.max(t, selection_anchor) - beg;
 			this.update_selection_('primary', beg, dur);
+
 			if (this.ebus != null) {
-				if (beg + dur > this.buffer.len_t) {
-					dur = this.buffer.len_t - beg;
-				}
 				this.ebus.queue(new ldc.waveform.WaveformRegionEvent(this, beg, dur, this.id));
-			}
-		}
-
-		if (this.ebus) {
-			var flag = false;
-
-			// scroll waveform & signal new position
-			if (mousedown) {
-				if (x < 0) {
-					if (wbeg > 0) {
-						var beg = Math.max(wbeg - wdur / 50.0, 0);
-						this.display(beg);
-						this.ebus.queue(new ldc.waveform.WaveformWindowEvent(this, beg));
-						this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, beg));
-						flag = true;
-					}
-				}
-				else if (x >= this.canvas.width) {
-					if (wbeg + wdur < this.buffer.len_t) {
-						var beg = Math.min(wbeg + wdur / 50.0, this.buffer.len_t - wdur);
-						this.display(beg);
-						this.ebus.queue(new ldc.waveform.WaveformWindowEvent(this, beg));
-						this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, beg + wdur));
-						flag = true;
-					}
+				if (wbeg1 != wbeg) {
+					this.ebus.queue(new ldc.waveform.WaveformWindowEvent(this, wbeg1));
 				}
 			}
-
-			// signal cursor position
-			if (flag == false) {
-				this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, t));
-			}
 		}
+		else {
+			t = Math.max(Math.min(t, wbeg + wdur), wbeg);
+		}
+
+		// update cursor
+		this.updateRegion(this.cursor_id, t);
+		if (this.ebus != null) {
+			this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, t));
+		}
+
 	}, false, this);
 
 	goog.events.listen(this.container, 'mousedown', function(e) {
@@ -425,7 +419,7 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 			var x = e.target.offsetLeft + e.offsetX;
 			var t = this.p2t(x) + this.windowStartTime();
 
-			if (x < 0 || x >= this.canvas.widt || t < 0 || t > this.buffer.len_t) {
+			if (x < 0 || x >= this.canvas.width || t < 0 || t > this.buffer.len_t) {
 				// out of range
 				return;
 			}
