@@ -83,6 +83,8 @@ ldc.textdisplay.TextEdit = function(id, eventBus, segFilter) {
  * @param {Table} table
  */
 ldc.textdisplay.TextEdit.prototype.setTable = function(table) {
+	this.rid2se.clear();
+	this.container.innerHTML = '';
 	this.table = table;
 	var that = this;
 	table.forEach(function(segment) {
