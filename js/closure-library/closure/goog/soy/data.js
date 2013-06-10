@@ -68,8 +68,11 @@ goog.soy.data.SanitizedContentKind = {
   /** A properly encoded portion of a URI. */
   URI: goog.DEBUG ? {sanitizedContentUri: true} : {},
 
-  /** An attribute name and value such as {@code dir="ltr"}. */
-  HTML_ATTRIBUTE: goog.DEBUG ? {sanitizedContentHtmlAttribute: true} : {},
+  /**
+   * Repeated attribute names and values. For example,
+   * {@code dir="ltr" foo="bar" onclick="trustedFunction()" checked}.
+   */
+  ATTRIBUTES: goog.DEBUG ? {sanitizedContentHtmlAttribute: true} : {},
 
   // TODO: Consider separating rules, declarations, and values into
   // separate types, but for simplicity, we'll treat explicitly blessed
@@ -102,15 +105,10 @@ goog.soy.data.SanitizedContentKind = {
  * SanitizedContent that is attacker-controlled and gets evaluated unescaped in
  * templates.
  *
- * @param {string} content The assumed-sanitized string. Be careful!
  * @constructor
  */
-goog.soy.data.SanitizedContent = function(content) {
-  /**
-   * The textual content.
-   * @type {string}
-   */
-  this.content = content;
+goog.soy.data.SanitizedContent = function() {
+  throw Error('Do not instantiate directly');
 };
 
 
@@ -119,6 +117,13 @@ goog.soy.data.SanitizedContent = function(content) {
  * @type {goog.soy.data.SanitizedContentKind}
  */
 goog.soy.data.SanitizedContent.prototype.contentKind;
+
+
+/**
+ * The already-safe content.
+ * @type {string}
+ */
+goog.soy.data.SanitizedContent.prototype.content;
 
 
 /** @override */

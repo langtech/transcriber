@@ -54,6 +54,8 @@ goog.require('goog.userAgent');
  */
 goog.debug.ErrorReporter = function(
     handlerUrl, opt_contextProvider, opt_noAutoProtect) {
+  goog.base(this);
+
   /**
    * Context provider, if one was provided.
    * @type {?function(!Error, !Object.<string, string>)}
@@ -257,7 +259,7 @@ goog.debug.ErrorReporter.prototype.setup_ = function() {
  */
 goog.debug.ErrorReporter.prototype.handleException = function(e,
     opt_context) {
-  var error = (/** @type {!Error} */ goog.debug.normalizeErrorObject(e));
+  var error = /** @type {!Error} */ (goog.debug.normalizeErrorObject(e));
 
   // Construct the context, possibly from the one provided in the argument, and
   // pass it to the context provider if there is one.

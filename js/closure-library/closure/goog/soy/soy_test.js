@@ -16,6 +16,7 @@
  * @fileoverview Provides test helpers for Soy tests.
  */
 
+/** @suppress {extraProvide} */
 goog.provide('goog.soy.testHelper');
 goog.setTestOnly('goog.soy.testHelper');
 
@@ -24,12 +25,29 @@ goog.require('goog.soy.data.SanitizedContent');
 goog.require('goog.soy.data.SanitizedContentKind');
 goog.require('goog.string');
 goog.require('goog.userAgent');
+goog.require('goog.dom.TagName');
+
+
+/**
+ * Instantiable subclass of SanitizedContent.
+ *
+ * This is a spoof for sanitized content that isn't robust enough to get
+ * through Soy's escaping functions but is good enough for the checks here.
+ *
+ * @param {string} content The text.
+ * @param {goog.soy.data.SanitizedContentKind} kind The kind of safe content.
+ * @extends {goog.soy.data.SanitizedContent}
+ */
+function SanitizedContentSubclass(content, kind) {
+  // IMPORTANT! No superclass chaining to avoid exception being thrown.
+  this.content = content;
+  this.contentKind = kind;
+}
+goog.inherits(SanitizedContentSubclass, goog.soy.data.SanitizedContent);
 
 
 function makeSanitizedContent(content, kind) {
-  var result = new goog.soy.data.SanitizedContent(content);
-  result.contentKind = kind;
-  return result;
+  return new SanitizedContentSubclass(content, kind);
 }
 
 
@@ -85,10 +103,10 @@ example.sanitizedHtmlTemplate = function(opt_data, opt_sb, opt_injectedData) {
 };
 
 
-example.sanitizedHtmlAttributeTemplate =
+example.sanitizedHtmlAttributesTemplate =
     function(opt_data, opt_sb, opt_injectedData) {
-  return makeSanitizedContent('Hello World',
-      goog.soy.data.SanitizedContentKind.HTML_ATTRIBUTE);
+  return makeSanitizedContent('foo="bar"',
+      goog.soy.data.SanitizedContentKind.ATTRIBUTES);
 };
 
 
@@ -101,7 +119,7 @@ example.sanitizedCssTemplate =
 
 example.unsanitizedTextTemplate =
     function(opt_data, opt_sb, opt_injectedData) {
-  return makeSanitizedContent('Hello World',
+  return makeSanitizedContent('I <3 Puppies & Kittens',
       goog.soy.data.SanitizedContentKind.TEXT);
 };
 
@@ -109,16 +127,17 @@ example.unsanitizedTextTemplate =
 example.templateSpoofingSanitizedContentString =
     function(opt_data, opt_sb, opt_injectedData) {
   return makeSanitizedContent('Hello World',
-    // This is to ensure we're using triple-equals against a unique Javascript
-    // object.  For example, in Javascript, consider ({}) == '[Object object]'
-    // is true.
-    goog.soy.data.SanitizedContentKind.HTML.toString());
+      // This is to ensure we're using triple-equals against a unique Javascript
+      // object.  For example, in Javascript, consider ({}) == '[Object object]'
+      // is true.
+      goog.soy.data.SanitizedContentKind.HTML.toString());
 };
 
 
 //
 // Test helper functions.
 //
+
 
 /**
  * Retrieves the content of document fragment as HTML.
