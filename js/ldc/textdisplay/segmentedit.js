@@ -129,7 +129,7 @@ ldc.textdisplay.SegmentEdit.installEventListener = function(subject, listener) {
 				browserEvent: event,
 				rid: parse_html_id(dom.id),
 				data: {
-					transcript: textwidget(event.target).textContent
+					transcript: textwidget(dom).textContent
 				}
 			});
 		}
