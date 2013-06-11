@@ -175,14 +175,17 @@ ldc.aikuma.SwimLane.prototype.render_segment_ = function(beg, dur) {
 		a = Math.round(a);
 		b = Math.round(b);
 
-		var div = goog.dom.createDom('div');
+		var div = goog.dom.createDom('div', {class:'aikuma-swimlane-segment'});
 		goog.dom.appendChild(this.html, div);
 		div.style.position = 'absolute';
 		div.style.left = (a+1) + 'px';
 		div.style.width = (b-a-2) + 'px';
-		div.style.height = '10px';
-		div.style.borderStyle = 'solid';
-		div.style.borderWidth = '1px';
+		if (this.beg > beg) {
+			div.className = div.className + ' aikuma-swimlane-segment-right';
+		}
+		if (this.beg + this.dur < beg + dur) {
+			div.className = div.className + ' aikuma-swimlane-segment-left';
+		}
 		return div;
 	}
 }

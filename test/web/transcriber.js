@@ -194,9 +194,13 @@ jQuery(function($) {
 	}
 
 	function add_swimlane(map) {
-		$swimlane = $('<div/>').appendTo('#swimlanes');
+		var $row = $('<div class="row-fluid"></div>').appendTo('#swimlanes');
+		var $picture = $('<div class="span1" id="picture"></div>').appendTo($row);
+		var $container = $('<div class="span11"></div>').appendTo($row);
+		var $swimlane = $('<div/>').appendTo($container);
 		var swimlane = new ldc.aikuma.SwimLane($swimlane[0], WAVEFORM.width, ebus);
 		$swimlane.attr('id', 'swimlane-' + swimlane.id);
+		$picture.attr('id', 'picture-' + swimlane.id);
 
 		map.split(/\s+/).forEach(function(line) {
 			var a = line.split(/[,:]/)
@@ -217,6 +221,46 @@ jQuery(function($) {
 		swimlane.setTable(table);
 		swimlane.display(WAVEFORM.beg, WAVEFORM.dur);
 		return swimlane;
+	}
+
+	function add_user_image(recording_uuid, i) {
+		var url = AIKUMA_BASE + '/recordings/' + recording_uuid + '.json';
+		download(url)
+		.then(function(json) {
+			var o = JSON.parse(json);
+			console.log(o.creator_uuid);
+			var image_url = AIKUMA_BASE + '/images/' + o.creator_uuid + '.small.jpg';
+
+			// face detection
+			var image = new Image;
+			image.onload = function() {
+				var opts = {
+					"canvas" : ccv.grayscale(ccv.pre(image)),
+					"cascade" : cascade,
+					"interval" : 5,
+					"min_neighbors" : 1,
+					"async" : true,
+					"worker" : 1
+				}
+				ccv.detect_objects(opts)(function(r) {
+					var x = 0;
+					var y = 0;
+					var el = $('#picture-' + i)[0];
+					if (r.length > 0) {
+						x = el.clientWidth / 2 - (r[0].x + r[0].width / 2);
+						y = el.clientHeight / 2 - (r[0].y + r[0].height / 2);
+					}
+					el.style.backgroundImage = 'url(' + image_url + ')';
+					el.style.backgroundPosition = x + 'px ' + y + 'px';
+				});
+			};
+			image.src = image_url;
+
+		})
+		.fail(function(e) {
+			console.log('failed to get user image url');
+			console.log(e);
+		})
 	}
 
 	// waveform setup
@@ -278,6 +322,7 @@ jQuery(function($) {
 			.then(function(map) {
 				var sl = add_swimlane(map);
 				add_respeaking_audio(AIKUMA_BASE + '/recordings/' + uuid + '.ogg', 'oga', sl.id);
+				add_user_image(uuid, sl.id);
 			})
 			.fail(function(e) {
 				console.log('failed to add swim lane for ' + i);
