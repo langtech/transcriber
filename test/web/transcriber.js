@@ -194,9 +194,8 @@ jQuery(function($) {
 	}
 
 	function add_swimlane(map) {
-		var $row = $('<div class="row-fluid"></div>').appendTo('#swimlanes');
-		var $picture = $('<div class="span1" id="picture"></div>').appendTo($row);
-		var $container = $('<div class="span11"></div>').appendTo($row);
+		var $picture = $('<div class="swimlane"></div>').appendTo($('#pictures'));
+		var $container = $('<div class="swimlane"></div>').appendTo($('#swimlane-containers'));
 		var $swimlane = $('<div/>').appendTo($container);
 		var swimlane = new ldc.aikuma.SwimLane($swimlane[0], WAVEFORM.width, ebus);
 		$swimlane.attr('id', 'swimlane-' + swimlane.id);
@@ -228,7 +227,6 @@ jQuery(function($) {
 		download(url)
 		.then(function(json) {
 			var o = JSON.parse(json);
-			console.log(o.creator_uuid);
 			var image_url = AIKUMA_BASE + '/images/' + o.creator_uuid + '.small.jpg';
 
 			// face detection
@@ -253,8 +251,18 @@ jQuery(function($) {
 					el.style.backgroundImage = 'url(' + image_url + ')';
 					el.style.backgroundPosition = x + 'px ' + y + 'px';
 				});
+
 			};
 			image.src = image_url;
+
+			var $img = $('<img src="' + image_url + '"/>').appendTo('#hidden-container');
+			$('#picture-' + i).popover({
+				placement: 'right',
+				trigger: 'hover',
+				html: true,
+				content: $img,
+				container: '#popup-container'
+			});
 
 		})
 		.fail(function(e) {
