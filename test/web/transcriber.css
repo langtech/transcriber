@@ -25,3 +25,8 @@
 .swimlane {
 	height: 15px;
 }
+
+#textpanel {
+	height: 300px;
+	overflow-y: auto;
+}

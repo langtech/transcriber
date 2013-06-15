@@ -6,6 +6,7 @@
 	<link href="../../js/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
 	<link href="transcriber.css" rel="stylesheet" media="screen">
 	<script src="../../js/jquery-1.9.1.min.js"></script>
+	<script src="../../js/bootstrap/js/bootstrap.min.js"></script>
 	<script src="../../js/jQuery.jPlayer.2.3.0/jquery.jplayer.min.js"></script>
 	<script src="../../js/closure-library/closure/goog/base.js"></script>
 	<script src="../../js/ldc/deps.js"></script>
@@ -19,44 +20,68 @@
 		<div id="player"></div>
 	</div>
 
-	<div class="container-fluid">
-		<div class="row-fluid">
-			<div class="span1"></div>
-			<div class="span10">
-				<div class="row-fluid">
-					<div class="span1"></div>
-					<div class="span8">
-						<div class="btn-group">
-							<button id="play-btn" class="btn" disabled
-								data-play-text="Pause"
-								data-pause-text="Resume">
-								Play
-							</button>
-							<button id="stop-btn" class="btn" disabled>Stop</button>
-							<button id="create-seg-btn" class="btn" disabled>
-								Create Segment
-							</button>
-							<button id="remove-seg-btn" class="btn" disabled>
-								Remove Segment
-							</button>
-							<button id="play-rspk-btn" class="btn" disabled
-								data-play-text="Stop">
-								Play Respeaking
-							</button>
-						</div>
-					</div>
-					<div class="span3">
-						<span id="sel-beg"></span> |
-						<span id="sel-dur"></span> |
-						<span id="pos"></span>
-					</div>
+	<div class="container">
+
+		<div class="row">
+			<div class="span1">
+				<div class="dropdown">
+					<button class="btn dropdown-toggle" data-toggle="dropdown">File <b class="caret"></b>
+					</button>
+					<ul class="dropdown-menu">
+						<li><a href="#file-dialog" data-toggle="modal">
+							Open Transcript from Local Storage
+						</a></li>
+						<li class="disabled"><a href="#" data-toggle="modal">
+							Scan & Index Aikuma Data Directory
+						</a></li>
+						<li class="disabled"><a href="#" data-toggle="modal">
+							Open Aikuma Recording Bundle
+						</a></li>
+						<li class="disabled"><a href="#" data-toggle="modal">
+							Open Original Recording
+						</a></li>
+						<li class="disabled"><a href="#" data-toggle="modal">
+							Open Respeaking
+						</a></li>
+						<li class="disabled"><a href="#" data-toggle="modal">
+							Open Verbal Translation
+						</a></li>
+					</ul>
 				</div>
+			</div>
+			<div class="span8">
+				<div class="btn-group">
+					<button id="play-btn" class="btn" disabled
+						data-play-text="Pause"
+						data-pause-text="Resume">
+						Play
+					</button>
+					<button id="stop-btn" class="btn" disabled>Stop</button>
+					<button id="create-seg-btn" class="btn" disabled>
+						Create Segment
+					</button>
+					<button id="remove-seg-btn" class="btn" disabled>
+						Remove Segment
+					</button>
+					<button id="play-rspk-btn" class="btn" disabled
+						data-play-text="Stop">
+						Play Respeaking
+					</button>
+				</div>
+			</div>
+		</div>
 
-				<br/>
+		<br/>
 
-				<div class="row-fluid">
-					<div class="span1"></div>
-					<div class="span11">
+		<div class="row">
+			<div class="span9">
+				<div class="row">
+					<div class="span1">
+						<div id="pos"></div>
+						<div id="sel-beg"></div>
+						<div id="sel-dur"></div>
+					</div>
+					<div class="span8">
 						<!-- waveform of the original recording -->
 						<canvas id="waveform"></canvas>
 						<div id="scrollbar"></div>
@@ -65,27 +90,44 @@
 
 				<br/>
 
-				<div class="row-fluid" id="swimlanes">
+				<div class="row" id="swimlanes">
 					<div id="pictures" class="span1"></div>
-					<div id="swimlane-containers" class="span11"></div>
+					<div id="swimlane-containers" class="span8"></div>
 				</div>
 
 				<br/>
 
 				<!-- the library will convert this to a text widget -->
-				<div class="row-fluid">
-					<div class="span1"></div>
-					<div class="span11">
+				<div class="row">
+					<div class="span8 offset1">
 						<div id="textpanel"></div>
 					</div>
 				</div>
 			</div>
+
+			<div class="span3">
+			</div>
+
 		</div>
+
 	</div>
 
 	<div id="popup-container"></div>
+	<div id="file-dialog" class="modal hide">
+		<div class="modal-header">
+			<button class="close" data-dismiss="modal">x</button>
+			<h3>Open Transcription File</h3>
+		</div>
+		<div class="modal-body">
+			<form name="local-file-form">
+				<input id="local-file" type="file">
+			</form>
+		</div>
+		<div class="modal-footer">
+			<button id="open-local-file" class="btn" data-dismiss="modal">Open</button>
+		</div>
+	</div>
 	<div id="hidden-container" style="display:none"></div>
 
-	<script src="../../js/bootstrap/js/bootstrap.min.js"></script>
 </body>
 </html>

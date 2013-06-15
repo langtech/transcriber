@@ -282,7 +282,7 @@ ldc.waveform.RichWaveform.prototype.handleEvent = function(e) {
 			this.unlinkRegion(this.selection_id);
 		}
 		if (arg.beg + arg.dur < this.windowStartTime() ||
-			arg.beg > arg.beg + arg.dur) {
+			arg.beg > this.windowStartTime() + this.windowDuration()) {
 			var t = arg.beg + (arg.dur / 2) - (this.windowDuration() / 2.0);
 			this.display(t < 0 ? 0 : t);
 		}

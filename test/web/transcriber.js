@@ -4,7 +4,7 @@ goog.require('goog.cssom');
 
 jQuery(function($) {
 	var WAVEFORM = {
-		width: 800,
+		width: 600,
 		beg: 0,
 		dur: 30
 	};
@@ -59,8 +59,6 @@ jQuery(function($) {
 		$('#player').jPlayer('stop');
 		$('#play-btn').button('reset');
 		$('#stop-btn').prop('disabled', true);
-
-		$('.dropdown-menu').dropdown();
 	});
 
 	$('#create-seg-btn').on('click', function() {
@@ -90,6 +88,36 @@ jQuery(function($) {
 			jplayer(sel_sl).jPlayer('stop');
 			$(this).button('reset');
 		}
+	});
+
+	$('#file-dialog').on('show', function() {
+		document.forms['local-file-form'].reset();
+		$('#open-local-file').prop('disabled', true);
+	});
+
+	$('#local-file').on('change', function(e) {
+		if ($('#local-file').prop('files').length > 0) {
+			$('#open-local-file').prop('disabled', false);
+		}
+	});
+
+	$('#open-local-file').on('click', function() {
+		var file = $('#local-file').prop('files')[0];
+		var reader = new FileReader;
+		reader.onload = function(e) {
+			var obj = JSON.parse(reader.result);
+			var wid = Object.keys(waveforms)[0];
+			var segs = table.find('waveform', function(v){return v==wid});
+			segs.forEach(function(rid) {
+				table.deleteRow(rid);
+			});
+			for (var i=0, item; item = obj.data[i]; ++i) {
+				var u = [wid, item.offset, item.length, item.transcript];
+				table.addRow(u);
+			}
+			textedit.setTable(table);
+		};
+		reader.readAsText(file);
 	});
 
 	// initialize event bus connections
