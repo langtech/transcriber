@@ -25,17 +25,18 @@
 		<div class="row">
 			<div class="span1">
 				<div class="dropdown">
-					<button class="btn dropdown-toggle" data-toggle="dropdown">File <b class="caret"></b>
+					<button class="btn dropdown-toggle" data-toggle="dropdown">
+						<span>File <b class="caret"></b></span>
 					</button>
 					<ul class="dropdown-menu">
 						<li><a href="#file-dialog" data-toggle="modal">
-							Open Transcript from Local Storage
+							Open Local Transcript
 						</a></li>
-						<li class="disabled"><a href="#" data-toggle="modal">
-							Scan & Index Aikuma Data Directory
+						<li><a href="#folder-dialog" data-toggle="modal">
+							Open Local Folder
 						</a></li>
-						<li class="disabled"><a href="#" data-toggle="modal">
-							Open Aikuma Recording Bundle
+						<li><a id="open-remote-trans" data-toggle="modal">
+							Open Remote Index File (sample)
 						</a></li>
 						<li class="disabled"><a href="#" data-toggle="modal">
 							Open Original Recording
@@ -82,9 +83,7 @@
 						<div id="sel-dur"></div>
 					</div>
 					<div class="span8">
-						<!-- waveform of the original recording -->
-						<canvas id="waveform"></canvas>
-						<div id="scrollbar"></div>
+						<div id="waveform-area"></div>
 					</div>
 				</div>
 
@@ -106,13 +105,22 @@
 			</div>
 
 			<div class="span3">
+				<div class="row">
+					<div class="span2">
+						<select id="recording-list" class="span2"></select>
+					</div>
+				</div>
+				<div class="row">
+					<div class="span1">
+						<button id="open-selected-recording" class="btn">Open</button>
+					</div>
+				</div>
 			</div>
 
 		</div>
 
 	</div>
 
-	<div id="popup-container"></div>
 	<div id="file-dialog" class="modal hide">
 		<div class="modal-header">
 			<button class="close" data-dismiss="modal">x</button>
@@ -127,6 +135,28 @@
 			<button id="open-local-file" class="btn" data-dismiss="modal">Open</button>
 		</div>
 	</div>
+
+	<div id="folder-dialog" class="modal hide">
+		<div class="modal-header">
+			<button class="close" data-dismiss="modal">x</button>
+			<h3>Open Aikuma Folder</h3>
+		</div>
+		<div class="modal-body">
+			<form name="local-folder-form">
+				<input id="local-folder-input" type="file" webkitdirectory>
+			</form>
+			<div class="progress">
+				<div id="progress-bar" class="bar" style="width: 0%"></div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button id="open-local-folder-btn" class="btn">Open</button>
+			<button id="close-folder-dialog-btn" class="btn" data-dismiss="modal">Done</button>
+		</div>
+	</div>
+
+
+	<div id="popup-container"></div>
 	<div id="hidden-container" style="display:none"></div>
 
 </body>
