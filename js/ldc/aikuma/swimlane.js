@@ -48,6 +48,7 @@ ldc.aikuma.SwimLane = function(div, width, eventbus, filter) {
 	this.id = counter++;
 
 	this.div.style.position = 'relative';
+	this.div.style.height = '15px';
 	this.setup_ui_events_();
 
 	this.beg = 0;
@@ -174,20 +175,14 @@ ldc.aikuma.SwimLane.prototype.render_segment_ = function(beg, dur) {
 		a = Math.round(a);
 		b = Math.round(b);
 
-		var div = goog.dom.createDom('div', {class:'aikuma-swimlane-segment'});
+		var div = goog.dom.createDom('div');
 		goog.dom.appendChild(this.html, div);
 		div.style.position = 'absolute';
-		div.style.left = a + 'px';
-		var width = b - a - 2;
-		if (this.beg > beg) {
-			div.className = div.className + ' aikuma-swimlane-segment-right';
-			width += 1;
-		}
-		if (this.beg + this.dur < beg + dur) {
-			div.className = div.className + ' aikuma-swimlane-segment-left';
-			width += 1
-		}
-		div.style.width = width + 'px';
+		div.style.left = (a+1) + 'px';
+		div.style.width = (b-a-2) + 'px';
+		div.style.height = '10px';
+		div.style.borderStyle = 'solid';
+		div.style.borderWidth = '1px';
 		return div;
 	}
 }
@@ -226,8 +221,7 @@ ldc.aikuma.SwimLane.prototype.handleEvent = function(e) {
 	}
 	else if (e instanceof ldc.aikuma.SwimLaneRegionEvent) {
 		if (this.selected != null) {
-			unselect_seg(this.selected);
-			this.selected = null;
+			this.selected.style.backgroundColor = 'white';
 		}
 	}
 }
@@ -250,9 +244,10 @@ ldc.aikuma.SwimLane.prototype.setup_ui_events_ = function() {
 		if (e.target.rid != null) {
 			var trow = this.table.getRow(e.target.rid);
 			if (this.selected != null) {
-				unselect_seg(this.selected);
+				this.selected.style.backgroundColor = 'white';
 			}
-			select_seg(this.selected = e.target);
+			this.selected = e.target;
+			this.selected.style.backgroundColor = 'rgba(255,0,0,0.4)';
 			if (this.ebus != null) {
 				var beg = trow.value('offset');
 				var dur = trow.value('length');
@@ -269,20 +264,6 @@ ldc.aikuma.SwimLane.prototype.setup_ui_events_ = function() {
 			}
 		}
 	}, false, this);
-}
-
-function select_seg(el) {
-	el.className += ' aikuma-swimlane-selected-segment';
-}
-
-function unselect_seg(el) {
-	var a = el.className.split(/\s+/);
-	var i = a.indexOf('aikuma-swimlane-selected-segment');
-	while (i >= 0) {
-		a.splice(i, 1);
-		i = a.indexOf('aikuma-swimlane-selected-segment');
-	}
-	el.className = a.join(' ');
 }
 
 // Returns -1, 0, or 1 respectively if a < b, a == b, or a > b.
