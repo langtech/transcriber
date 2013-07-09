@@ -271,17 +271,6 @@ jQuery(function($) {
 	textedit.setTable(table);
 
 
-
-	function setup_waveform(audio_buffer) {
-				var shapefile = ldc.waveform.Utils.makeShapeFile(600, 10, audio_buffer);
-				var waveform_buffer = new ldc.waveform.WaveformBuffer(shapefile);
-				var canvas = document.getElementById('waveform');
-				canvas.width = 800;
-				canvas.height = 100;
-				var waveform = new ldc.waveform.Waveform(waveform_buffer, canvas, 0);
-				waveform.display(0, 5);
-	};
-
 	/**
 	 * Read PCM samples from the audio file.
 	 *
@@ -547,6 +536,7 @@ jQuery(function($) {
 		var scrollbar = new ldc.waveform.Scrollbar(wset, $scrollbar[0], ebus);
 		scrollbar.setWidth(WAVEFORM.width);
 	}
+
 
 	/**
 	 * @method download
