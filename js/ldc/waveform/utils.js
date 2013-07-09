@@ -37,7 +37,7 @@ ldc.waveform.Utils = {
 		// index of the last sample for next output
 		var next = delta;
 
-		var num_frames = Math.ceil(audio_buffer.length / samplerate);
+		var num_frames = Math.ceil(audio_buffer.duration * samplerate);
 		var frame_size = 2 * channels;
 		var shape = new Int8Array(16 + num_frames * frame_size);
 
