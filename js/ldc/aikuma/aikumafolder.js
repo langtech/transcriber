@@ -91,6 +91,10 @@ ldc.aikuma.AikumaFolder.prototype.loadFolder = function(filelist, progress) {
 	}
 }
 
+/**
+ * Build an index of recording groups. Each recording group consists of
+ * an original recording and an array of respeakings.
+ */
 ldc.aikuma.AikumaFolder.prototype.buildRecordingGroups = function() {
 	for (var uuid in this.recordings) {
 		var item = this.recordings[uuid];

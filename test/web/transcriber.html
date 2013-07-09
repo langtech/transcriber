@@ -1,21 +1,22 @@
 <!doctype html>
-<html>
+<html ng-app>
 <head>
 	<title>
 	</title>
 	<link href="../../js/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
 	<link href="transcriber.css" rel="stylesheet" media="screen">
+	<script src="../../components/angular/angular.min.js"></script>
 	<script src="../../js/jquery-1.9.1.min.js"></script>
 	<script src="../../js/bootstrap/js/bootstrap.min.js"></script>
 	<script src="../../js/jQuery.jPlayer.2.4.0/jquery.jplayer.min.js"></script>
 	<script src="../../js/closure-library/closure/goog/base.js"></script>
 	<script src="../../js/ldc/deps.js"></script>
-	<script src="../../js/components/q/q.min.js"></script>
+	<script src="../../components/q/q.min.js"></script>
 	<script src="../../js/ccv/ccv.js"></script>
 	<script src="../../js/ccv/face.js"></script>
 	<script src="transcriber.js"></script>
 </head>
-<body>
+<body ng-controller="Transcriber">
 	<div id="players">
 		<div id="player"></div>
 	</div>

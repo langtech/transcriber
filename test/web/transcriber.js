@@ -153,10 +153,17 @@ jQuery(function($) {
 				var $list = $('#recording-list');
 				$list[0].innerHTML = '';
 				for (var uuid in aikuma.recording_groups) {
-					var json = aikuma.recordings[uuid].json;
-					var title = json.recording_name;
-					var el = $('<option>' + title + '</option>').appendTo($list);
-					el.attr('value', uuid);
+					if (aikuma.recordings.hasOwnProperty(uuid)) {
+						var json = aikuma.recordings[uuid].json;
+						if (json) {
+							var title = json.recording_name;
+							var el = $('<option>' + title + '</option>').appendTo($list);
+							el.attr('value', uuid);
+							if (aikuma.recordings[uuid].wav == null) {
+								el.attr('disabled', true);
+							}
+						}
+					}
 				}
 			}
 		});
@@ -174,11 +181,11 @@ jQuery(function($) {
 		var file = aikuma.recordings[grp.original].wav;
 		var url = URL.createObjectURL(file);
 		add_original_audio(url, 'wav');
-		var reader = new FileReader;
-		reader.onload = function() {
-			setup_waveform(this.result);
-		}
-		reader.readAsArrayBuffer(aikuma.recordings[grp.original].shape);
+		
+		decode_audio_file(file, function(audio_buffer) {
+			var shape = ldc.waveform.Utils.makeShapeFile(800, 5, audio_buffer, 1);
+			setup_waveform(shape);
+		});
 
 		var make_cb = function(respeaking) {
 			return function() {
@@ -192,9 +199,11 @@ jQuery(function($) {
 		}
 
 		for (var i=0, item; item = aikuma.recordings[grp.respeakings[i]]; ++i) {
-			reader = new FileReader;
-			reader.onload = make_cb(item);
-			reader.readAsText(item.map);
+			if (item.json && item.wav) {
+				var reader = new FileReader;
+				reader.onload = make_cb(item);
+				reader.readAsText(item.map);
+			}
 		}
 	});
 
@@ -261,6 +270,76 @@ jQuery(function($) {
 
 	textedit.setTable(table);
 
+
+
+	function setup_waveform(audio_buffer) {
+				var shapefile = ldc.waveform.Utils.makeShapeFile(600, 10, audio_buffer);
+				var waveform_buffer = new ldc.waveform.WaveformBuffer(shapefile);
+				var canvas = document.getElementById('waveform');
+				canvas.width = 800;
+				canvas.height = 100;
+				var waveform = new ldc.waveform.Waveform(waveform_buffer, canvas, 0);
+				waveform.display(0, 5);
+	};
+
+	/**
+	 * Read PCM samples from the audio file.
+	 *
+	 * Seems to be a little unreliable. For example, sometimes rendering is
+	 * not complete. Also, various random amount of offset was added at the
+	 * beginning.
+	 *
+	 * @param {File} file Audio file.
+	 * @param {Number} channels Number of channels to extract (default=1).
+	 * @param {Function} callback A function taking an AudioBuffer object.
+	 */
+	function read_audio_file(file, channels, callback) {
+		if (channels == null) {
+			channels = 1;
+		}
+		url = URL.createObjectURL(file);
+		audio = new Audio(url);
+
+		audio.addEventListener('durationchange', function(e) {
+			var context = new webkitOfflineAudioContext(channels, 44100 * audio.duration, 44100);
+			var node1 = context.createMediaElementSource(audio);
+			var node3 = context.destination; //context.createMediaStreamDestination();
+
+			node1.connect(node3);
+
+			context.oncomplete = function(e) {
+				callback(e.renderedBuffer);
+			};
+
+			context.startRendering();
+			audio.play();
+
+		});
+
+		audio.load();
+	}
+
+	/**
+	 * Decode audio file and get PCM samples.
+	 *
+	 * Seems to be more accurate than the method using OfflineAudioContext.
+	 * However, cannot handle large audio file, e.g. those longer than 20 min.
+	 *
+	 * @param {File} file Audio file.
+	 * @param {Function} callback A function taking an AudioBuffer object.
+	 */
+	function decode_audio_file(file, callback) {
+		var reader = new FileReader;
+		reader.onload = function(e) {
+			var context = new webkitAudioContext;
+			context.decodeAudioData(this.result, function(decoded) {
+				callback(decoded);
+			}, function() {
+				console.log('decoding error');
+			});
+		};
+		reader.readAsArrayBuffer(file);
+	}
 
 	/**
 	 * Parse a json File object.
@@ -522,3 +601,7 @@ jQuery(function($) {
 	}
 
 });
+
+function Transcriber() {
+
+}
