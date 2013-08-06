@@ -14,6 +14,7 @@
 	<script src="../../components/q/q.min.js"></script>
 	<script src="../../js/ccv/ccv.js"></script>
 	<script src="../../js/ccv/face.js"></script>
+	<script src="../../components/FileSaver/FileSaver.min.js"></script>
 	<script src="transcriber.js"></script>
 </head>
 <body ng-controller="Transcriber">
@@ -35,6 +36,9 @@
 						</a></li>
 						<li><a href="#folder-dialog" data-toggle="modal">
 							Open Local Folder
+						</a></li>
+						<li><a href="#save-file-dialog" data-toggle="modal">
+							Save Transcript
 						</a></li>
 						<li><a id="open-remote-trans" data-toggle="modal">
 							Open Remote Index File (sample)
@@ -156,6 +160,20 @@
 		</div>
 	</div>
 
+	<div id="save-file-dialog" class="modal hide">
+		<div class="modal-header">
+			<button class="close" data-dismiss="modal">x</button>
+			<h3>Save Transcription File</h3>
+		</div>
+		<div class="modal-body">
+			<form name="save-file-form">
+				<input id="save-file-input" type="text">
+			</form>
+		</div>
+		<div class="modal-footer">
+			<button id="save-file-btn" class="btn" data-dismiss="modal">Save</button>
+		</div>
+	</div>
 
 	<div id="popup-container"></div>
 	<div id="hidden-container" style="display:none"></div>
