@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "main": "test/web/transcriber.html",
   "dependencies": {
-    "q": "*"
+    "q": "*",
+    "FileSaver": "*",
+    "angular": "*"
   }
 }
