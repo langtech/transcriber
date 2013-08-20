@@ -29,6 +29,7 @@ goog.require('goog.structs.AvlTree');
  * Emits the following events.
  *
  * - TableUpdateRowEvent (fired when user updates SegmentEdit)
+ * - WaveformSelectEvent (fired when user focuses a segment)
  *
  * @class TextEdit
  * @constructor

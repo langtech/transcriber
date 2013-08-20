@@ -212,11 +212,11 @@ function update_object(obj, updater) {
  * @param {Event} event
  */
 ldc.datamodel.Table.prototype.handleEvent = function(event) {
-	if (event.constructor == ldc.datamodel.TableUpdateRowEvent) {
+	if (event instanceof ldc.datamodel.TableUpdateRowEvent) {
 		var args = event.args();
 		this.updateRow(args.rid, args.data);
 	}
-	else if (event.constructor == ldc.datamodel.TableAddRowEvent) {
+	else if (event instanceof ldc.datamodel.TableAddRowEvent) {
 		var args = event.args();
 		var row = [];
 		for (var i=0; i < this.header_.length; ++i) {

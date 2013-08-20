@@ -1,6 +1,6 @@
 {
 	"options": {
 		"exclude": "js/closure-library,js/test",
-		"paths": [ "js" ]
+		"paths": [ "js/ldc" ]
 	}
 }
