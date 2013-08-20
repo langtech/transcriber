@@ -39,7 +39,17 @@ jQuery(function($) {
 
 	var aikuma = new ldc.aikuma.AikumaFolder;
 
+	function get_waveform_id() {
+		return Object.keys(waveforms)[0];
+	}
 
+	function select_segment(rid) {
+		var beg = table.getCell(rid, 'offset');
+		var dur = table.getCell(rid, 'length');
+		var wid = get_waveform_id();
+		var e = new ldc.waveform.WaveformSelectEvent(main, beg, dur, wid, rid);
+		ebus.queue(e);
+	}
 
 	function jplayer(slid) {
 		return $('#player-' + slid);
@@ -95,6 +105,19 @@ jQuery(function($) {
 			jplayer(sel_sl).jPlayer('stop');
 			$(this).button('reset');
 		}
+	});
+
+	// New Transcript menu
+	$('#new-transcript-menu').on('click', function() {
+		var wid = Object.keys(waveforms)[0];
+		var all_rids = table.find('waveform', function(v){return v != null});
+		for (var i=0; i < all_rids.length; ++i) {
+			var rid = all_rids[i];
+			table.deleteRow(rid);
+		}
+		var big_segment = [wid, 0, waveforms[wid].length()];
+		table.addRow(big_segment);
+		textedit.setTable(table);
 	});
 
 	// Open Transcript menu
@@ -185,6 +208,9 @@ jQuery(function($) {
 		decode_audio_file(file, function(audio_buffer) {
 			var shape = ldc.waveform.Utils.makeShapeFile(800, 5, audio_buffer, 1);
 			setup_waveform(shape);
+
+			// create new transcript
+			$('#new-transcript-menu').trigger('click');
 		});
 
 		var make_cb = function(respeaking) {
@@ -207,6 +233,26 @@ jQuery(function($) {
 		}
 	});
 
+	// Save Transcription Menu
+
+	$('#save-file-dialog').on('show', function() {
+	});
+
+	$('#save-file-btn').on('click', function(e) {
+		var obj = {meta:{}, data:[]};
+		table.forEach(function(row) {
+			obj.data.push({
+				offset: row.value('offset'),
+				length: row.value('length'),
+				transcript: row.value('transcript')
+			});
+		}, function(row) {
+			return row.value('mapoff') == null;
+		});
+
+		var blob = new Blob([JSON.stringify(obj)], {type: "text/plain;charset=utf-8"});
+		saveAs(blob, "transcript.json");
+	});
 
 	// open remote sample files
 
@@ -590,8 +636,90 @@ jQuery(function($) {
 		});
 	}
 
+	document.addEventListener('keydown', function(e) {
+		var special = [];
+		if (e.ctrlKey)
+			special.push('ctrl');
+		if (e.shiftKey)
+			special.push('shift');
+		if (e.altKey)
+			special.push('alt');
+		if (e.metaKey)
+			special.push('meta');
+		var c = String.fromCharCode(e.keyCode);
+		if (c == "\t") {
+			e.preventDefault();
+			if (e.shiftKey) {
+				$('#stop-btn').trigger('click');
+			}
+			if (sel_rid == null) {
+				sel_beg = 0;
+				sel_dur = waveforms[Object.keys(waveforms)[0]].length();
+			}
+			$('#play-btn').trigger('click');
+		}
+		else if (e.keyCode == 8 && e.ctrlKey) {  // ctrl+backspace
+			e.preventDefault();
+			if (sel_rid != null) {
+				var beg = table.getCell(sel_rid, 'offset');
+				var end = beg + table.getCell(sel_rid, 'length');
+				var prev_row = null;
+				var prev_gap = 999999;
+				table.forEach(function(row) {
+					if (row.value('waveform') != null) {
+						var beg1 = row.value('offset');
+						var end1 = beg1 + row.value('length');
+						if (end1 <= beg && prev_gap > beg - end1) {
+							prev_row = row;
+							prev_gap = beg - end1;
+						}
+					}
+				});
+				if (prev_row != null) {
+					var new_beg = prev_row.value('offset');
+					var new_dur = end - new_beg;
+					var update = {length: new_dur};
+					var e = new ldc.datamodel.TableUpdateRowEvent(main, prev_row.rid(), update);
+					ebus.queue(e);
+					e = new ldc.datamodel.TableDeleteRowEvent(main, sel_rid);
+					ebus.queue(e);
+					table.deleteRow(sel_rid);
+					select_segment(prev_row.rid());
+				}
+			}
+		}
+		else if (e.keyCode == 13) {  // return
+			var t = play_pos;
+			e.preventDefault();
+			var rows = [];
+			table.forEach(function(row) {
+				if (row.value('waveform') != null) {
+					var beg = row.value('offset');
+					var end = beg + row.value('length');
+					if (t > beg && t < end) {
+						rows.push(row);
+					}
+				}
+			});
+			for (var i=0, row; row = rows[i]; ++i) {
+				var beg = row.value('offset');
+				var end = beg + row.value('length');
+				var new_length = t - beg;
+				var update = {length:new_length};
+				var e = new ldc.datamodel.TableUpdateRowEvent(main, row.rid(), update);
+				ebus.queue(e);
+				var new_row = {offset: t, length: end - t, waveform: get_waveform_id()};
+				var new_rid = ldc.datamodel.Table.getNewRid();
+				e = new ldc.datamodel.TableAddRowEvent(main, new_rid, new_row);
+				ebus.queue(e);
+				select_segment(new_rid);
+			}
+		}
+		console.log('key code: ' + e.keyCode);
+	});
+
 });
 
 function Transcriber() {
-
 }
+
