@@ -89,10 +89,12 @@ ldc.textdisplay.TextEdit.prototype.setTable = function(table) {
 	this.table = table;
 	var that = this;
 	table.forEach(function(segment) {
-		var se = new ldc.textdisplay.SegmentEdit(segment);
-		goog.dom.appendChild(that.container, se.dom());
 		that.rid2se.add(segment);
 	}, this.filter);
+	this.rid2se.inOrderTraverse(function(segment) {
+		var se = new ldc.textdisplay.SegmentEdit(segment);
+		goog.dom.appendChild(that.container, se.dom());
+	});
 }
 
 /**
