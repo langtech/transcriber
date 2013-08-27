@@ -43,6 +43,10 @@ jQuery(function($) {
 		return Object.keys(waveforms)[0];
 	}
 
+	function get_waveform() {
+		return waveforms[get_waveform_id()];
+	}
+
 	function select_segment(rid) {
 		var beg = table.getCell(rid, 'offset');
 		var dur = table.getCell(rid, 'length');
@@ -251,7 +255,8 @@ jQuery(function($) {
 		});
 
 		var blob = new Blob([JSON.stringify(obj)], {type: "text/plain;charset=utf-8"});
-		saveAs(blob, "transcript.json");
+		var filename = $('#save-file-input').val();
+		saveAs(blob, filename);
 	});
 
 	// open remote sample files
@@ -654,7 +659,7 @@ jQuery(function($) {
 			}
 			if (sel_rid == null) {
 				sel_beg = 0;
-				sel_dur = waveforms[Object.keys(waveforms)[0]].length();
+				sel_dur = get_waveform().length();
 			}
 			$('#play-btn').trigger('click');
 		}
@@ -715,7 +720,7 @@ jQuery(function($) {
 				select_segment(new_rid);
 			}
 		}
-		console.log('key code: ' + e.keyCode);
+		//console.log('key code: ' + e.keyCode);
 	});
 
 });
