@@ -7,11 +7,12 @@
  */
 goog.provide('ldc.waveform.RichWaveform');
 goog.require('ldc.waveform.Waveform');
-goog.require('ldc.event');
+goog.require('ldc.waveform.WaveformCursorEvent');
 goog.require('goog.dom');
 goog.require('goog.style');
 goog.require('goog.object');
 goog.require('goog.events');
+goog.require('goog.cssom');
 
 UNSELECTABLE_CSS_ADDED = false;
 
@@ -37,7 +38,7 @@ ldc.waveform.RichWaveform = function(buffer, canvas, channel, ebus) {
 	goog.base(this, buffer, canvas, channel);
 
 	// wrap the canvas element
-	this.container = goog.dom.createDom('div', {class:'unselectable'});
+	this.container = goog.dom.createDom('div', {'class':'unselectable'});
 	this.container.style.position = 'relative';
 	this.canvas.style.cursor = 'crosshair';
 	goog.dom.insertSiblingAfter(this.container, canvas);
@@ -119,8 +120,8 @@ ldc.waveform.RichWaveform.prototype.addRegion = function(t, dur, color) {
 		html: div,
 		pos: t,
 		dur: dur==null || dur < 0 ? 0 : dur,
-		color: color==null ? 'red' : color,
-	}
+		color: color==null ? 'red' : color
+	};
 
 	this.regions[id] = region;
 	this.render_region_(region);
