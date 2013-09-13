@@ -6,7 +6,6 @@
  * @namespace textdisplay
  */
 goog.provide('ldc.textdisplay.TextEdit');
-goog.require('ldc.textdisplay.SegmentEdit');
 goog.require('ldc.datamodel.TableRow');
 goog.require('ldc.event.Event');
 goog.require('goog.dom');
@@ -14,7 +13,7 @@ goog.require('goog.events');
 goog.require('goog.structs.AvlTree');
 
 /**
- * Displays Table object as a set of SegmentEdit. TextEdit requires the
+ * Displays Table object as a set of segmeng widgets. TextEdit requires the
  * following fields from Table.
  *
  * - offset
@@ -28,34 +27,37 @@ goog.require('goog.structs.AvlTree');
  *
  * Emits the following events.
  *
- * - TableUpdateRowEvent (fired when user updates SegmentEdit)
+ * - TableUpdateRowEvent (fired when user updates information on a segment widget)
  * - WaveformSelectEvent (fired when user focuses a segment)
  *
  * @class TextEdit
  * @constructor
  * @param {String} id Id of a div element that will contain TextEdit widget.
+ * @param {Function} segWidget A widget class that is responsible for rendering
+ *   a segment and processing user events about the segment.
  * @param {EventBus} [eventBus]
  * @param {Function} [segFilter] Boolean function taking a Segment object.
  */
-ldc.textdisplay.TextEdit = function(id, eventBus, segFilter) {
+ldc.textdisplay.TextEdit = function(id, segWidget, eventBus, segFilter) {
 	this.ebus = eventBus;
+	this.segWidget = segWidget;
 	// The HTML element representing this object.
 	this.container = goog.dom.createDom('div', {'class':'textedit'});
 	goog.dom.append(goog.dom.getElement(id), this.container);
 
-	// Rid-to-SegmentEdit index. This is a self-balancing binary search tree.
+	// Rid-to-segment-widget index. This is a self-balancing binary search tree.
 	// The helper function comp_seg is used to make segments orderd by start
 	// and end offsets.
 	this.rid2se = new goog.structs.AvlTree(comp_seg);
 	this.table = null;
 	var that = this;
-	ldc.textdisplay.SegmentEdit.installEventListener(this.container, function(e) {
+	segWidget.installEventListener(this.container, function(e) {
 		if (that.table) {
-			if (e.eventType == ldc.textdisplay.SegmentEdit.EventType.CHANGE) {
+			if (e.eventType == segWidget.EventType.CHANGE) {
 				var ev = new ldc.datamodel.TableUpdateRowEvent(that, e.rid, e.data);
 				eventBus.queue(ev);
 			}
-			else if (e.eventType == ldc.textdisplay.SegmentEdit.EventType.SELECT) {
+			else if (e.eventType == segWidget.EventType.SELECT) {
 				var beg = that.table.getCell(e.rid, 'offset');
 				var dur = that.table.getCell(e.rid, 'length');
 				var wid = that.table.getCell(e.rid, 'waveform');
@@ -92,7 +94,7 @@ ldc.textdisplay.TextEdit.prototype.setTable = function(table) {
 		that.rid2se.add(segment);
 	}, this.filter);
 	this.rid2se.inOrderTraverse(function(segment) {
-		var se = new ldc.textdisplay.SegmentEdit(segment);
+		var se = new that.segWidget(segment);
 		goog.dom.appendChild(that.container, se.dom());
 	});
 }
@@ -100,11 +102,11 @@ ldc.textdisplay.TextEdit.prototype.setTable = function(table) {
 /**
  * @method findSegment
  * @param {Number} rid
- * @return {SegmentEdit}
+ * @return {Object} An instance of the segment widget.
  */
  ldc.textdisplay.TextEdit.prototype.findSegment = function(rid) {
  	var segment = new ldc.datamodel.TableRow(this.table, rid);
- 	return new ldc.textdisplay.SegmentEdit(segment);
+ 	return new this.segWidget(segment);
  }
 
 /**
@@ -134,8 +136,9 @@ ldc.textdisplay.TextEdit.prototype.handleEvent = function(event) {
 		};
 		if (smax != null && comp_seg(s, smax) < 0) {
 			var before = null;
+			var seg_widget = this.segWidget;
 			this.rid2se.inOrderTraverse(function(x) {
-				var se = new ldc.textdisplay.SegmentEdit(x);
+				var se = new seg_widget(x);
 				before = se.dom();
 				return true;
 			}, s);
@@ -169,7 +172,7 @@ ldc.textdisplay.TextEdit.prototype.handleEvent = function(event) {
 ldc.textdisplay.TextEdit.prototype.add_seg_ = function(rid, before) {
 	if (this.table) {
 		var seg = new ldc.datamodel.TableRow(this.table, rid);
-		var se = new ldc.textdisplay.SegmentEdit(seg);
+		var se = new this.segWidget(seg);
 		if (before) {
 			goog.dom.insertSiblingBefore(se.dom(), before);
 		}
@@ -191,7 +194,7 @@ ldc.textdisplay.TextEdit.prototype.add_seg_ = function(rid, before) {
 ldc.textdisplay.TextEdit.prototype.remove_seg_ = function(rid) {
 	if (this.table) {
 		var seg = new ldc.datamodel.TableRow(this.table, rid);
-		var se = new ldc.textdisplay.SegmentEdit(seg);
+		var se = new this.segWidget(seg);
 		this.rid2se.remove(seg);
 		goog.dom.removeNode(se.dom());
 	}

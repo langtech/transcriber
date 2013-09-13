@@ -27,13 +27,17 @@ jQuery(function($) {
 		'offset',      // start offset of the region
 		'length',      // lenght of the region
 		'transcript',  // transcript for the region
+		'translation', // translation of the transcript
 		'swimlane',    // swimlane id; null if waveform id is not null, or vice versa
 		'mapoff',      // if this is re-spoken region, offset into the respeaking
 		'maplen'       // length of the respeaking
 		], ebus);
-	var textedit = new ldc.textdisplay.TextEdit('textpanel', ebus, function(seg) {
+	var segment_filter = function(seg) {
 		return seg.value('waveform') != null;
-	});
+	};
+	var textedit = new ldc.textdisplay.TextEdit(
+		'textpanel', ldc.aikuma.AikumaSegment, ebus, segment_filter
+	);
 	var waveforms = {};
 
 
@@ -147,7 +151,7 @@ jQuery(function($) {
 				table.deleteRow(rid);
 			});
 			for (var i=0, item; item = obj.data[i]; ++i) {
-				var u = [wid, item.offset, item.length, item.transcript];
+				var u = [wid, item.offset, item.length, item.transcript, item.translation];
 				table.addRow(u);
 			}
 			textedit.setTable(table);
@@ -248,7 +252,8 @@ jQuery(function($) {
 			obj.data.push({
 				offset: row.value('offset'),
 				length: row.value('length'),
-				transcript: row.value('transcript')
+				transcript: row.value('transcript'),
+				translation: row.value('translation')
 			});
 		}, function(row) {
 			return row.value('mapoff') == null;
@@ -469,6 +474,7 @@ jQuery(function($) {
 					null,
 					a[0] / 16000,
 					(a[1] - a[0]) / 16000,
+					null,
 					null,
 					swimlane.id,
 					a[2] / 16000,
