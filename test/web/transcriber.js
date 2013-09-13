@@ -4,7 +4,7 @@ goog.require('goog.cssom');
 
 jQuery(function($) {
 	var WAVEFORM = {
-		width: 620,
+		width: 750,
 		beg: 0,
 		dur: 30
 	};
@@ -130,7 +130,7 @@ jQuery(function($) {
 
 	// Open Transcript menu
 
-	$('#file-dialog').on('show', function() {
+	$('#file-dialog').on('shown.bs.modal', function() {
 		document.forms['local-file-form'].reset();
 		$('#open-local-file').prop('disabled', true);
 	});
@@ -143,8 +143,8 @@ jQuery(function($) {
 
 	$('#open-local-file').on('click', function() {
 		var file = $('#local-file').prop('files')[0];
-		parse_json_file(file).
-		then(function(obj) {
+		parse_json_file(file)
+		.then(function(obj) {
 			var wid = Object.keys(waveforms)[0];
 			var segs = table.find('waveform', function(v){return v==wid});
 			segs.forEach(function(rid) {
@@ -155,12 +155,16 @@ jQuery(function($) {
 				table.addRow(u);
 			}
 			textedit.setTable(table);
+		})
+		.fail(function(e) {
+			console.log(e.stack);
+			alert('Unable to parse transcription file.');
 		});
 	});
 
 	// Open Folder menu
 
-	$('#folder-dialog').on('show', function() {
+	$('#folder-dialog').on('shown.bs.modal', function() {
 		document.forms['local-folder-form'].reset();
 		$('#progress-bar').css('width', '0%');
 		$('#open-local-folder-btn').prop('disabled', true);
@@ -243,7 +247,7 @@ jQuery(function($) {
 
 	// Save Transcription Menu
 
-	$('#save-file-dialog').on('show', function() {
+	$('#save-file-dialog').on('shown.bs.modal', function() {
 	});
 
 	$('#save-file-btn').on('click', function(e) {
@@ -397,8 +401,12 @@ jQuery(function($) {
 		var deferred = Q.defer();
 		var reader = new FileReader;
 		reader.onload = function(e) {
-			var obj = JSON.parse(reader.result);
-			deferred.resolve(obj);
+			try {
+				var obj = JSON.parse(reader.result);
+				deferred.resolve(obj);
+			} catch (e) {
+				deferred.reject(e);
+			}
 		};
 		reader.readAsText(file);
 		return deferred.promise;

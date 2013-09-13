@@ -178,14 +178,13 @@ ldc.aikuma.SwimLane.prototype.render_segment_ = function(beg, dur) {
 		goog.dom.appendChild(this.html, div);
 		div.style.position = 'absolute';
 		div.style.left = a + 'px';
-		var width = b - a - 2;
+		div.style.boxSizing = 'boder-box';
+		var width = b - a;
 		if (this.beg > beg) {
 			div.className = div.className + ' aikuma-swimlane-segment-right';
-			width += 1;
 		}
 		if (this.beg + this.dur < beg + dur) {
 			div.className = div.className + ' aikuma-swimlane-segment-left';
-			width += 1
 		}
 		div.style.width = width + 'px';
 		return div;

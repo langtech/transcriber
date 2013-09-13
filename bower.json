@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "main": "test/web/transcriber.html",
   "dependencies": {
+    "bootstrap": "*",
+    "jplayer": "*",
+    "jquery": "*",
     "q": "*",
     "FileSaver": "*",
     "angular": "*"
