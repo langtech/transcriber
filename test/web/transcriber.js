@@ -6,7 +6,9 @@ jQuery(function($) {
 	var WAVEFORM = {
 		width: 750,
 		beg: 0,
-		dur: 30
+		dur: 30,
+		max_width: 800,
+		min_dur: 5
 	};
 
 	var AIKUMA_BASE = '/transcriber/test/data/aikuma';
@@ -21,6 +23,8 @@ jQuery(function($) {
 	var map_beg = 0.0;
 	var map_dur = 0.0;
 
+	var cur_audio;  // uuid of currently loaded original audio
+	
 	var ebus = new ldc.event.EventBus;
 	var table = new ldc.datamodel.Table([
 		'waveform',    // waveform id (only meaningful for current session)
@@ -211,14 +215,16 @@ jQuery(function($) {
 		$('#swimlane-containers')[0].innerHTML = '';
 
 		var $option = $('#recording-list option:selected').first();
-		var uuid = $option.attr('value');
+		var uuid = cur_uuid = $option.attr('value');
 		var grp = aikuma.recording_groups[uuid];
 		var file = aikuma.recordings[grp.original].wav;
 		var url = URL.createObjectURL(file);
 		add_original_audio(url, 'wav');
 		
 		decode_audio_file(file, function(audio_buffer) {
-			var shape = ldc.waveform.Utils.makeShapeFile(800, 5, audio_buffer, 1);
+			var shape = ldc.waveform.Utils.makeShapeFile(
+				WAVEFORM.max_width, WAVEFORM.min_dur, audio_buffer, 1
+			);
 			setup_waveform(shape);
 
 			// create new transcript
@@ -251,19 +257,23 @@ jQuery(function($) {
 	});
 
 	$('#save-file-btn').on('click', function(e) {
-		var obj = {meta:{}, data:[]};
+		var rows = [
+			';; user someuser',
+			';; original_uuid ' + cur_uuid
+		];
 		table.forEach(function(row) {
-			obj.data.push({
-				offset: row.value('offset'),
-				length: row.value('length'),
-				transcript: row.value('transcript'),
-				translation: row.value('translation')
-			});
+			rows.push([
+				row.value('offset'),
+				row.value('offset') + row.value('length'),
+				'speaker:',
+				row.value('transcript'),
+				row.value('translation')
+			].join('\t'));
 		}, function(row) {
 			return row.value('mapoff') == null;
 		});
-
-		var blob = new Blob([JSON.stringify(obj)], {type: "text/plain;charset=utf-8"});
+		rows.push('');
+		var blob = new Blob([rows.join('\n')], {type: "text/plain;charset=utf-8"});
 		var filename = $('#save-file-input').val();
 		saveAs(blob, filename);
 	});

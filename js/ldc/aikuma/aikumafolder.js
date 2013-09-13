@@ -21,13 +21,21 @@ ldc.aikuma.AikumaFolder = function() {
 	this.users = {};
 
 	/**
-	 * Collection of objects related to recordings.
+	 * Collection of objects related to recordings. Hash of hash with
+	 * structure: uuid -> <type> -> file_object, where <type> can be
+	 *
+	 *   - json
+	 *   - map
+	 *   - wav
+	 *   - ...
+	 *
 	 * @property recordings
 	 */
 	this.recordings = {};
 
 	/**
-	 * Collection of objects representing a group of recodgins.
+	 * Collection of objects representing a group of recodgins. Keyed
+	 * by uuid of original recording.
 	 *
 	 * Each item has two properties:
 	 *   original -- uuid of the original recording
