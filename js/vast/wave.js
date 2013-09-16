@@ -1,7 +1,8 @@
-//(function() {
+(function() {
 
 /**
- * @nmodule vast
+ * @module vast
+ * @namespace vast
  */
 
 goog.provide('vast.Wave');
@@ -14,6 +15,7 @@ goog.require('goog.net.XhrIo');
 
 
 /**
+ * @private
  * @method download
  * @param {String} url
  * @param {String} [type] If the value is "array_buffer", the url is
@@ -52,9 +54,12 @@ function execute_callback(callback, args) {
 }
 
 /**
+ * Construct a waveform display widget.
+ *
  * @class Wave
  * @constructor
- * @param {String} elementId
+ * @param {String} elementId ID of a DIV element inside which the widget will
+ *   be rendered.
  */
 vast.Wave = function(elementId) {
 	this.container = document.getElementById(elementId);
@@ -74,8 +79,11 @@ vast.Wave = function(elementId) {
 };
 
 /**
+ * Load a shapefile and render the widget. If a callback function is supplied,
+ * it is called after everything is loaded and rendered.
+ *
  * @method setShapeUrl
- * @param {string} waveformUrl
+ * @param {string} shapeFileUrl
  * @param {function} callback Called when shape file is loaded.
  */
 vast.Wave.prototype.setShapeUrl = function(waveformUrl, callback) {
@@ -84,6 +92,10 @@ vast.Wave.prototype.setShapeUrl = function(waveformUrl, callback) {
 	.then(function(raw_data) {
 		var buf = new ldc.waveform.WaveformBuffer(raw_data);
 		that.container.innerHTML = '';
+		that.ebus = new ldc.event.EventBus;
+		that.waveforms.forEach(function(meta) {
+			meta.waveform.tearDown();
+		});
 		that.waveforms = [];
 		that.waveform_set = new ldc.waveform.WaveformSet;
 		for (var c=0; c < buf.channels; ++c) {
@@ -105,13 +117,16 @@ vast.Wave.prototype.setShapeUrl = function(waveformUrl, callback) {
 		execute_callback(callback);
 	})
 	.fail(function(e) {
-		console.log(e);
+		console.log(e.stack);
 		alert("Failed to download waveform: " + waveform_url +
 			"\n\nSee console for details.");
 	});
 };
 
 /**
+ * Load an audio from the specified URL. If a callback function is supplied,
+ * it is called after audio has been loaded.
+ *
  * @method setAudioUrl
  * @param {String} audioUrl
  * @param {String} format
@@ -142,10 +157,10 @@ vast.Wave.prototype.setAudioUrl = function(audioUrl, format, callback) {
 };
 
 /**
- * Start offset of the currently selected region.
+ * Returns start offset of the currently selected region.
  *
  * @method getCursor
- * @return {Number}
+ * @return {Number} Start offset of the current region.
  */
 vast.Wave.prototype.getCursor = function() {
 	var s = this.getSpan();
@@ -155,8 +170,13 @@ vast.Wave.prototype.getCursor = function() {
 };
 
 /**
+ * Returns start offset and lenght of the currently selected region.
+ *
  * @method getSpan
- * @return {Object}
+ * @return {Object} An object with two properties:
+ *
+ *   - offset: start offset of the region
+ *   - length: length of the region
  */
 vast.Wave.prototype.getSpan = function() {
 	if (this.waveforms.length > 0) {
@@ -166,6 +186,8 @@ vast.Wave.prototype.getSpan = function() {
 };
 
 /**
+ * Play currently selected region.
+ *
  * @method playCurrentSpan
  */
 vast.Wave.prototype.playCurrentSpan = function() {
@@ -178,6 +200,8 @@ vast.Wave.prototype.playCurrentSpan = function() {
 };
 
 /**
+ * Play specified region.
+ *
  * @method playThisSpan
  * @param {Number} offset
  * @param {Number} length
@@ -189,6 +213,8 @@ vast.Wave.prototype.playThisSpan = function(offset, length) {
 };
 
 /**
+ * Resize the waveform area.
+ *
  * @method setCanvasSize
  * @param {Number} width
  * @param {Number} height
@@ -201,6 +227,8 @@ vast.Wave.prototype.setCanvasSize = function(width, height) {
 };
 
 /**
+ * Move and resize the current waveform display window.
+ *
  * @method display
  * @param {Number} startOffset
  * @param {Number} endOffset
@@ -211,4 +239,16 @@ vast.Wave.prototype.display = function(startOffset, endOffset) {
 	}
 };
 
-//})();
+/*
+goog.exportSymbol('vast.Wave', vast.Wave);
+goog.exportSymbol('vast.Wave.prototype.setShapeUrl', vast.Wave.prototype.setShapeUrl);
+goog.exportSymbol('vast.Wave.prototype.setAudioUrl', vast.Wave.prototype.setAudioUrl);
+goog.exportSymbol('vast.Wave.prototype.getCursor', vast.Wave.prototype.getCursor);
+goog.exportSymbol('vast.Wave.prototype.getSpan', vast.Wave.prototype.getSpan);
+goog.exportSymbol('vast.Wave.prototype.playCurrentSpan', vast.Wave.prototype.playCurrentSpan);
+goog.exportSymbol('vast.Wave.prototype.playThisSpan', vast.Wave.prototype.playThisSpan);
+goog.exportSymbol('vast.Wave.prototype.setCanvasSize', vast.Wave.prototype.setCanvasSize);
+goog.exportSymbol('vast.Wave.prototype.display', vast.Wave.prototype.display);
+*/
+
+})();

@@ -23,7 +23,19 @@ UNSELECTABLE_CSS_ADDED = false;
  * region called 'selection' that is updated when user uses mouse to mark a
  * region or when it receives WaveformRegionEvent.
  *
- * Generates and listens on MouseMoveEvent.
+ * Listens to the following events:
+ *
+ *  - {{#crossLink "waveform.WaveformCursorEvent"}}{{/crossLink}}
+ *  - {{#crossLink "waveform.WaveformRegionEvent"}}{{/crossLink}}
+ *  - {{#crossLink "waveform.WaveformWindowEvent"}}{{/crossLink}}
+ *  - {{#crossLink "waveform.WaveformSelectEvent"}}{{/crossLink}}
+ *
+ * Emits the following events:
+ *
+ *  - {{#crossLink "waveform.WaveformCursorEvent"}}{{/crossLink}}
+ *  - {{#crossLink "waveform.WaveformRegionEvent"}}{{/crossLink}}
+ *  - {{#crossLink "waveform.WaveformWindowEvent"}}{{/crossLink}}
+ *  - {{#crossLink "datamodel.TableUpdateRowEvent"}}{{/crossLink}}
  *
  * @class RichWaveform
  * @extends waveform.Waveform
@@ -89,6 +101,7 @@ ldc.waveform.RichWaveform = function(buffer, canvas, channel, ebus) {
 	}
 
 	// listen on mouse event so that we animate cursor and selection.
+	this.event_listener_keys = [];  // to be used for tearing down
 	this.setup_mouse_events_();
 }
 goog.inherits(ldc.waveform.RichWaveform, ldc.waveform.Waveform);
@@ -363,7 +376,9 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 	var sel = this.getSelection();
 	var edge = null;
 
-	goog.events.listen(document.body, 'mousemove', function(e) {
+	var k = null;  // event listener key
+
+	k = goog.events.listen(document.body, 'mousemove', function(e) {
 		var wbeg = this.windowStartTime();
 		var wdur = this.windowDuration();
 		var e1 = this.container.getBoundingClientRect();
@@ -415,6 +430,8 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 
 	}, false, this);
 
+	this.event_listener_keys.push(k);
+
 	goog.events.listen(this.container, 'mousedown', function(e) {
 		if (e.button == 0) {  // left mouse button
 			var x = e.target.offsetLeft + e.offsetX;
@@ -463,7 +480,7 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 		}
 	});
 
-	goog.events.listen(document.body, 'mouseup', function(e) {
+	k = goog.events.listen(document.body, 'mouseup', function(e) {
 		mousedown = false;
 		if (edge != null && sel.rid != null && this.ebus != null) {
 			var u = {offset:sel.pos, length:sel.dur};
@@ -472,6 +489,24 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 		}
 		edge = null;
 	}, false, this);
+
+	this.event_listener_keys.push(k);
+}
+
+/**
+ * Disconnect event handlers from event bus and browser window objects.
+ * Call this method before removing the RichWaveform object.
+ *
+ * @method tearDown
+ */
+ldc.waveform.RichWaveform.prototype.tearDown = function() {
+	for (var i=0, k; k = this.event_listener_keys[i]; ++i) {
+		goog.events.unlistenByKey(k);
+	}
+	this.ebus.disconnect(ldc.waveform.WaveformCursorEvent, this);
+	this.ebus.disconnect(ldc.waveform.WaveformRegionEvent, this);
+	this.ebus.disconnect(ldc.waveform.WaveformWindowEvent, this);
+	this.ebus.disconnect(ldc.waveform.WaveformSelectEvent, this);
 }
 
 })();

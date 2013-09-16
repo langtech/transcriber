@@ -9,13 +9,11 @@ A minimal example of vast.Wave.
 	<title>Vast Wave Minimal Example</title>
 	<script src="../../bower_components/jquery/jquery.min.js"></script>
 	<script src="../../bower_components/jplayer/jquery.jplayer/jquery.jplayer.js"></script>
-	<!--
 	<script src="../../bower_components/q/q.min.js"></script>
 	<script src="../../js/closure-library/closure/goog/base.js"></script>
 	<script src="../../js/ldc/deps.js"></script>
 	<script src="../../js/vast/wave.js"></script>
-	-->
-	<script src="../../test.js"></script>
+	<script>goog.require('vast.Wave');</script>
 </head>
 <body>
 	<div id="waveform" style="width:600px"></div>
@@ -24,21 +22,15 @@ A minimal example of vast.Wave.
 	<button onclick="wave.playCurrentSpan();">Play Span</button>
 </body>
 <script>
-</script>
-<script>
 
 var wave = new vast.Wave('waveform');
 
-//alert('About to start loading waveform...');
 wave.setShapeUrl('../data/cts.shape', function() {
-	//alert('Waveform has been loaded.\n\nWaveform is about to be resized.');
 	wave.setCanvasSize(600, 100);
-	//alert('Waveform has been resized.\n\nWaveform is about to be displayed.');
 	wave.display(0, 30);
 	alert('Completed loading waveform.');
 });
 
-//alert('About to start loading audio...');
 wave.setAudioUrl('../data/cts.ogg', 'oga', function() {
 	alert('Audio has been loaded.');
 });

@@ -11,6 +11,10 @@ goog.require('goog.cssom');
 /**
  * Turn an html element into a scrollbar widget for waveforms.
  * 
+ * Emits and listens to the following events:
+ *
+ *  - {{#crossLink "waveform.WaveformWindowEvent"}}{{/crossLink}}
+ *
  * @class Scrollbar
  * @constructor
  * @param {WaveformSet} waveformSet
