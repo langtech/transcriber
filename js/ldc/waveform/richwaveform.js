@@ -313,7 +313,11 @@ ldc.waveform.RichWaveform.prototype.handleEvent = function(e) {
 ldc.waveform.RichWaveform.prototype.render_region_ = function(r) {
 	var x = this.t2p(r.pos);
 	var y = this.t2p(r.pos + r.dur);
-	if (y < 0 || x >= this.canvas.width) {
+	if (x == null || y == null) {
+		// display hadn't been initialized, so t2p() returned null
+		return;
+	}
+	else if (y < 0 || x >= this.canvas.width) {
 		r.html.style.display = 'none';
 	}
 	else {

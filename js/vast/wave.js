@@ -186,6 +186,21 @@ vast.Wave.prototype.getSpan = function() {
 };
 
 /**
+ * Highlight the specified region on the waveform.
+ *
+ * @method setSpan
+ * @param {Number} offset
+ * @param {Number} length
+ */
+vast.Wave.prototype.setSpan = function(offset, length) {
+	if (this.waveforms.length > 0) {
+		var w = this.waveforms[0].waveform;
+		var e = new ldc.waveform.WaveformRegionEvent(this, offset, length, w.id);
+		this.ebus.queue(e);
+	}
+};
+
+/**
  * Play currently selected region.
  *
  * @method playCurrentSpan
@@ -239,16 +254,20 @@ vast.Wave.prototype.display = function(startOffset, endOffset) {
 	}
 };
 
-/*
+vast.Wave.prototype.handleEvent = function(e) {
+	if (e instanceof ldc.waveform.WaveformCursorEvent) {
+	}
+};
+
 goog.exportSymbol('vast.Wave', vast.Wave);
 goog.exportSymbol('vast.Wave.prototype.setShapeUrl', vast.Wave.prototype.setShapeUrl);
 goog.exportSymbol('vast.Wave.prototype.setAudioUrl', vast.Wave.prototype.setAudioUrl);
 goog.exportSymbol('vast.Wave.prototype.getCursor', vast.Wave.prototype.getCursor);
 goog.exportSymbol('vast.Wave.prototype.getSpan', vast.Wave.prototype.getSpan);
+goog.exportSymbol('vast.Wave.prototype.setSpan', vast.Wave.prototype.setSpan);
 goog.exportSymbol('vast.Wave.prototype.playCurrentSpan', vast.Wave.prototype.playCurrentSpan);
 goog.exportSymbol('vast.Wave.prototype.playThisSpan', vast.Wave.prototype.playThisSpan);
 goog.exportSymbol('vast.Wave.prototype.setCanvasSize', vast.Wave.prototype.setCanvasSize);
 goog.exportSymbol('vast.Wave.prototype.display', vast.Wave.prototype.display);
-*/
 
 })();
