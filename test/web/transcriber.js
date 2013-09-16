@@ -147,7 +147,7 @@ jQuery(function($) {
 
 	$('#open-local-file').on('click', function() {
 		var file = $('#local-file').prop('files')[0];
-		parse_json_file(file)
+		parse_transcription_file(file)
 		.then(function(obj) {
 			var wid = Object.keys(waveforms)[0];
 			var segs = table.find('waveform', function(v){return v==wid});
@@ -401,18 +401,18 @@ jQuery(function($) {
 	}
 
 	/**
-	 * Parse a json File object.
+	 * Parse a transcription File object.
 	 *
-	 * @method parse_json_file
+	 * @method parse_transcription_file
 	 * @param {File} file A File object containing json.
 	 * @return A promise on parsed object.
 	 */
-	function parse_json_file(file) {
+	function parse_transcription_file(file) {
 		var deferred = Q.defer();
 		var reader = new FileReader;
 		reader.onload = function(e) {
 			try {
-				var obj = JSON.parse(reader.result);
+				var obj = ldc.aikuma.AikumaTranscript.parse(reader.result);
 				deferred.resolve(obj);
 			} catch (e) {
 				deferred.reject(e);
@@ -696,6 +696,7 @@ jQuery(function($) {
 				var prev_gap = 999999;
 				table.forEach(function(row) {
 					if (row.value('waveform') != null) {
+						// this is a real segment, a segment on the original audio
 						var beg1 = row.value('offset');
 						var end1 = beg1 + row.value('length');
 						if (end1 <= beg && prev_gap > beg - end1) {
@@ -723,6 +724,7 @@ jQuery(function($) {
 			var rows = [];
 			table.forEach(function(row) {
 				if (row.value('waveform') != null) {
+					// this is a real segment, a segment on the original audio
 					var beg = row.value('offset');
 					var end = beg + row.value('length');
 					if (t > beg && t < end) {
