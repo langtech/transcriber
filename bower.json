@@ -8,6 +8,8 @@
     "jquery": "*",
     "q": "*",
     "FileSaver": "*",
-    "angular": "*"
+    "angular": "*",
+    "jquery": "*",
+    "jplayer": "*"
   }
 }

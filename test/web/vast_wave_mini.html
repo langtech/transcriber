@@ -1,0 +1,99 @@
+<!doctype html>
+<!--
+
+A minimal example of vast.Wave.
+
+-->
+<html>
+<head>
+	<title>Vast Wave Minimal Example</title>
+  <style>body {font-family: monospace;}</style>
+	<script src="../../bower_components/jquery/jquery.min.js"></script>
+	<script src="../../bower_components/jplayer/jquery.jplayer/jquery.jplayer.js"></script>
+
+	<!-- uncomment during development
+	<script src="../../bower_components/q/q.js"></script>
+	<script src="../../js/closure-library/closure/goog/base.js"></script>
+	<script src="../../js/ldc/deps.js"></script>
+	<script src="../../js/vast/wave.js"></script>
+	<script>goog.require('vast.Wave');</script>
+  -->
+
+	<!-- uncomment for testing
+  -->
+	<script src="../../js/vast-wave.min.js"></script>
+</head>
+<body>
+	<div id="log" style="float:right;"></div>
+
+	<div id="waveform" style="width:600px"></div>
+
+	<br>
+	<div>
+		<button onclick="call_get_cursor();">Get Cursor</button>
+		<button onclick="call_get_span();">Get Span</button>
+		<button onclick="call_play_current_span();">Play Span</button>
+	</div>
+	<br>
+	<div>
+		Start <input type="text" size="5" id="start_offset"></input>
+		End <input type="text" size="5" id="end_offset"></input>
+		<button onclick="call_select_span();">Set Span</button>
+		<button onclick="call_play_this_span();">Play This Span</button>
+	</div>
+</body>
+<script>
+
+function log(msg, color) {
+	var ts = new Date;
+	var s = ts.toTimeString().split(' ')[0] + '.' + ts.getMilliseconds();
+	var $msg = $('<span>' + msg + '</span>');
+	$('<div>[' + s + '] </div>').appendTo('#log').append($msg);
+	if (color != null) {
+		$msg.css('color', color);
+	}
+}
+
+var wave = new vast.Wave('waveform');
+
+wave.setShapeUrl('../data/cts.shape', function() {
+	wave.setCanvasSize(600, 100);
+	wave.display(0, 30);
+	log('Completed loading waveform.');
+});
+
+wave.setAudioUrl('../data/cts.ogg', 'oga', function() {
+	log('Audio has been loaded.');
+});
+
+function call_get_cursor() {
+	log('getCursor()');
+	var v = wave.getCursor();
+	log(v, 'red');
+}
+
+function call_get_span() {
+	log('getSpan()');
+	var v = wave.getSpan();
+	log(JSON.stringify(v), 'red');
+}
+function call_play_current_span() {
+	log('playCurrentSpan()');
+	wave.playCurrentSpan();
+}
+
+function call_play_this_span() {
+	var a = parseFloat(document.getElementById('start_offset').value);
+	var b = parseFloat(document.getElementById('end_offset').value);
+	log('playThisSpan(' + a + ',' + (b-a) + ')');
+	wave.playThisSpan(a, b-a);
+}
+function call_select_span() {
+	var a = parseFloat(document.getElementById('start_offset').value);
+	var b = parseFloat(document.getElementById('end_offset').value);
+	log('setSpan(' + a + ',' + (b-a) + ')');
+	wave.setSpan(a, b - a);
+}
+
+</script>
+</html>
