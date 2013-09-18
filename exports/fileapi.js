@@ -315,6 +315,12 @@ File.prototype.name;
 File.prototype.lastModifiedDate;
 
 /**
+ *
+ * @type {string}
+ */
+File.prototype.webkitRelativePath;
+
+/**
  * @see http://www.w3.org/TR/file-system-api/#the-fileentry-interface
  * @constructor
  * @extends {Entry}
