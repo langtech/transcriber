@@ -4,7 +4,7 @@ goog.require('goog.cssom');
 
 jQuery(function($) {
 	var WAVEFORM = {
-		width: 750,
+		width: 720,
 		beg: 0,
 		dur: 30,
 		max_width: 800,
@@ -26,23 +26,43 @@ jQuery(function($) {
 	var cur_audio;  // uuid of currently loaded original audio
 	
 	var ebus = new ldc.event.EventBus;
+
 	var table = new ldc.datamodel.Table([
-		'waveform',    // waveform id (only meaningful for current session)
+		'waveform',    // waveform id (null if not bound to a waveform)
 		'offset',      // start offset of the region
 		'length',      // lenght of the region
 		'transcript',  // transcript for the region
 		'translation', // translation of the transcript
-		'swimlane',    // swimlane id; null if waveform id is not null, or vice versa
+		'swimlane',    // swimlane id (null if not bound to a swimlane)
 		'mapoff',      // if this is re-spoken region, offset into the respeaking
 		'maplen'       // length of the respeaking
 		], ebus);
-	var segment_filter = function(seg) {
-		return seg.value('waveform') != null;
+
+	/**
+	 * @return {Array} Array of segments that are not swimlane segments.
+	 */
+	function transcript_segments() {
+		return table.find('swimlane', function(v) {
+			return v == null;
+		});
+	}
+
+	/**
+	 * Tells whether the segment is a transcript segment as opposed to a
+	 * swimlane segment.
+	 *
+	 * @return {Boolean}
+	 */
+	function is_transcript_segment(seg) {
+		return seg.value('swimlane') == null;
 	};
+
 	var textedit = new ldc.textdisplay.TextEdit(
-		'textpanel', ldc.aikuma.AikumaSegment, ebus, segment_filter
+		'textpanel', ldc.aikuma.AikumaSegment, ebus, is_transcript_segment
 	);
+
 	var waveforms = {};
+	var swimlanes = [];
 
 
 	var aikuma = new ldc.aikuma.AikumaFolder;
@@ -65,6 +85,26 @@ jQuery(function($) {
 
 	function jplayer(slid) {
 		return $('#player-' + slid);
+	}
+
+	function alert2(msg, cls) {
+		$('<div/>')
+		.addClass('alert alert-dismissable fade in')
+		.addClass('alert-' + cls)
+		.appendTo($('#error-pane'))
+		.text(msg)
+		.prepend(
+			$('<button>&times</button>')
+			.addClass('close')
+			.attr({
+				type: 'button',
+				'data-dismiss': 'alert'
+			})
+		);
+	}
+
+	function warn(msg) {
+		alert2(msg, 'warning');
 	}
 
 	$('#play-btn').on('click', function(e) {
@@ -120,17 +160,7 @@ jQuery(function($) {
 	});
 
 	// New Transcript menu
-	$('#new-transcript-menu').on('click', function() {
-		var wid = Object.keys(waveforms)[0];
-		var all_rids = table.find('waveform', function(v){return v != null});
-		for (var i=0; i < all_rids.length; ++i) {
-			var rid = all_rids[i];
-			table.deleteRow(rid);
-		}
-		var big_segment = [wid, 0, waveforms[wid].length()];
-		table.addRow(big_segment);
-		textedit.setTable(table);
-	});
+	$('#new-transcript-menu').on('click', new_transcript);
 
 	// Open Transcript menu
 
@@ -149,11 +179,16 @@ jQuery(function($) {
 		var file = $('#local-file').prop('files')[0];
 		parse_transcription_file(file)
 		.then(function(obj) {
-			var wid = Object.keys(waveforms)[0];
-			var segs = table.find('waveform', function(v){return v==wid});
-			segs.forEach(function(rid) {
-				table.deleteRow(rid);
+			return open_audio_group(obj.meta.original_uuid)
+			.thenResolve(obj)
+			.fail(function(e) {
+				warn(e);
+				return obj;
 			});
+		})
+		.then(function(obj) {
+			table_clear_transcript();
+			var wid = get_waveform_id();
 			for (var i=0, item; item = obj.data[i]; ++i) {
 				var u = [wid, item.offset, item.length, item.transcript, item.translation];
 				table.addRow(u);
@@ -161,8 +196,11 @@ jQuery(function($) {
 			textedit.setTable(table);
 		})
 		.fail(function(e) {
-			console.log(e.stack);
-			alert('Unable to parse transcription file.');
+			if (e.stack)
+				console.log(e.stack);
+			else
+				console.log((new Error(e)).stack);
+			alert();
 		});
 	});
 
@@ -210,45 +248,9 @@ jQuery(function($) {
 
 
 	$('#open-selected-recording').on('click', function(e) {
-		$('#players')[0].innerHTML = '';
-		$('#pictures')[0].innerHTML = '';
-		$('#swimlane-containers')[0].innerHTML = '';
-
 		var $option = $('#recording-list option:selected').first();
-		var uuid = cur_uuid = $option.attr('value');
-		var grp = aikuma.recording_groups[uuid];
-		var file = aikuma.recordings[grp.original].wav;
-		var url = URL.createObjectURL(file);
-		add_original_audio(url, 'wav');
-		
-		decode_audio_file(file, function(audio_buffer) {
-			var shape = ldc.waveform.Utils.makeShapeFile(
-				WAVEFORM.max_width, WAVEFORM.min_dur, audio_buffer, 1
-			);
-			setup_waveform(shape);
-
-			// create new transcript
-			$('#new-transcript-menu').trigger('click');
-		});
-
-		var make_cb = function(respeaking) {
-			return function() {
-				var sl = add_swimlane(this.result);
-				var image_file = aikuma.users[respeaking.json.creator_uuid]['small.jpg'];
-				var image_url = URL.createObjectURL(image_file);
-				var audio_url = URL.createObjectURL(respeaking.wav);
-				add_user_image(image_url, sl.id);
-				add_respeaking_audio(audio_url, 'wav', sl.id);
-			};
-		}
-
-		for (var i=0, item; item = aikuma.recordings[grp.respeakings[i]]; ++i) {
-			if (item.json && item.wav) {
-				var reader = new FileReader;
-				reader.onload = make_cb(item);
-				reader.readAsText(item.map);
-			}
-		}
+		var uuid = $option.attr('value');
+		open_audio_group(uuid);
 	});
 
 	// Save Transcription Menu
@@ -342,6 +344,78 @@ jQuery(function($) {
 
 
 	/**
+	 * Parse a transcription File object.
+	 *
+	 * @method parse_transcription_file
+	 * @param {File} file A File object containing json.
+	 * @return A promise on parsed object.
+	 */
+	function parse_transcription_file(file) {
+		var deferred = Q.defer();
+		var reader = new FileReader;
+		reader.onload = function(e) {
+			try {
+				var obj = ldc.aikuma.AikumaTranscript.parse(reader.result);
+				deferred.resolve(obj);
+			} catch (e) {
+				deferred.reject(e);
+			}
+		};
+		reader.readAsText(file);
+		return deferred.promise;
+	}
+
+
+
+	/**
+	 * Remove transcript segments from table.
+	 *
+	 * @method table_clear_transcript
+	 */
+	function table_clear_transcript() {
+		var segs = table.find('swimlane', function(v) {return v==null});
+		segs.forEach(function(rid) {
+			table.deleteRow(rid);
+		});
+	}
+
+
+	/**
+	 * Remove swimlane segments from table.
+	 *
+	 * @method table_clear_swimlane
+	 */
+	function table_clear_swimlane() {
+		var segs = table.find('swimlane', function(v) {return v!=null});
+		segs.forEach(function(rid) {
+			table.deleteRow(rid);
+		});
+	}
+
+
+	function tear_down_swimlanes() {
+		for (var i=0, sl; sl = swimlanes[i]; ++i) {
+			sl.tearDown();
+		}
+		swimlanes = [];
+	}
+
+
+	/**
+	 * Create a new empty transcript.
+	 *
+	 * @method new_transcript
+	 */
+	function new_transcript() {
+		table_clear_transcript();
+		var wid = Object.keys(waveforms)[0];
+		var big_segment = [wid, 0, waveforms[wid].length()];
+		table.addRow(big_segment);
+		textedit.setTable(table);
+	}
+
+
+	/**
 	 * Read PCM samples from the audio file.
 	 *
 	 * Seems to be a little unreliable. For example, sometimes rendering is
@@ -400,25 +474,75 @@ jQuery(function($) {
 		reader.readAsArrayBuffer(file);
 	}
 
+
 	/**
-	 * Parse a transcription File object.
-	 *
-	 * @method parse_transcription_file
-	 * @param {File} file A File object containing json.
-	 * @return A promise on parsed object.
+	 * @method open_audio_group
+	 * @param {String} uuid UUID of the original audio.
+	 * @return {Promise} A promise for null.
 	 */
-	function parse_transcription_file(file) {
+	function open_audio_group(uuid) {
+		var grp = aikuma.recording_groups[uuid];
+
+		if (grp == null) {
+			return Q.reject('No recording group by the UUID: ' + uuid);
+		}
+
+		var recording = aikuma.recordings[grp.original];
+
+		if (recording == null) {
+			return Q.reject('No original audio by UUID: ' + grp.original);
+		}
+
+		$('#players')[0].innerHTML = '';
+		$('#pictures')[0].innerHTML = '';
+		$('#swimlane-containers')[0].innerHTML = '';
+
+		cur_uuid = uuid;
+
 		var deferred = Q.defer();
-		var reader = new FileReader;
-		reader.onload = function(e) {
-			try {
-				var obj = ldc.aikuma.AikumaTranscript.parse(reader.result);
-				deferred.resolve(obj);
-			} catch (e) {
-				deferred.reject(e);
+		var url = URL.createObjectURL(recording.wav);
+		add_original_audio(url, 'wav');
+
+		decode_audio_file(recording.wav, function(audio_buffer) {
+			var shape = ldc.waveform.Utils.makeShapeFile(
+				WAVEFORM.max_width, WAVEFORM.min_dur, audio_buffer, 1
+			);
+			setup_waveform(shape);
+
+			var segs = transcript_segments();
+			if (segs.length == 0) {
+				new_transcript();
 			}
-		};
-		reader.readAsText(file);
+			else {
+				var w = get_waveform_id();
+				segs.forEach(function(rid) {
+					table.updateRow(rid, {waveform:w});
+				});
+			}
+			deferred.resolve();
+		});
+
+		var make_cb = function(respeaking) {
+			return function() {
+				var sl = add_swimlane(this.result);
+				var image_file = aikuma.users[respeaking.json.creator_uuid]['small.jpg'];
+				var image_url = URL.createObjectURL(image_file);
+				var audio_url = URL.createObjectURL(respeaking.wav);
+				add_user_image(image_url, sl.id);
+				add_respeaking_audio(audio_url, 'wav', sl.id);
+			};
+		}
+
+		tear_down_swimlanes();
+		table_clear_swimlane();
+		for (var i=0, item; item = aikuma.recordings[grp.respeakings[i]]; ++i) {
+			if (item.json && item.wav) {
+				var reader = new FileReader;
+				reader.onload = make_cb(item);
+				reader.readAsText(item.map);
+			}
+		}
+
 		return deferred.promise;
 	}
 
@@ -451,6 +575,7 @@ jQuery(function($) {
 		});
 	}
 
+
 	/**
 	 * Create a new jPlayer for given respeaking.
 	 *
@@ -475,6 +600,7 @@ jQuery(function($) {
 			}
 		});
 	}
+
 
 	function add_swimlane(map) {
 		var $picture = $('<div class="swimlane"></div>').appendTo($('#pictures'));
@@ -503,8 +629,11 @@ jQuery(function($) {
 
 		swimlane.setTable(table);
 		swimlane.display(WAVEFORM.beg, WAVEFORM.dur);
+
+		swimlanes.push(swimlane);
 		return swimlane;
 	}
+
 
 	function add_user_image(image_url, i) {
 
@@ -544,6 +673,7 @@ jQuery(function($) {
 			container: '#popup-container'
 		});
 	}
+
 
 	function add_user_image_from_web(recording_uuid, i) {
 		var url = AIKUMA_BASE + '/recordings/' + recording_uuid + '.json';
@@ -594,6 +724,7 @@ jQuery(function($) {
 		})
 	}
 
+
 	// waveform setup
 	function setup_waveform(raw_data) {
 		waveforms = {};
@@ -639,6 +770,7 @@ jQuery(function($) {
 		return deferred.promise;
 	}
 
+
 	function process_aikuma_recording_index(json) {
 		var o = JSON.parse(json);
 
@@ -665,6 +797,7 @@ jQuery(function($) {
 		});
 	}
 
+
 	document.addEventListener('keydown', function(e) {
 		var special = [];
 		if (e.ctrlKey)
@@ -683,7 +816,8 @@ jQuery(function($) {
 			}
 			if (sel_rid == null) {
 				sel_beg = 0;
-				sel_dur = get_waveform().length();
+				var w = get_waveform();
+				sel_dur = w == null ? 0 : w.length();
 			}
 			$('#play-btn').trigger('click');
 		}

@@ -163,7 +163,7 @@ ldc.datamodel.Table.prototype.getCell = function(rid, field) {
 /**
  * Update cells in a row.
  *
- * @method update
+ * @method updateRow
  * @param {Number} rid
  * @param {Object} update An Update object.
  */

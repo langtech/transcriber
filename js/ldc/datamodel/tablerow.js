@@ -35,7 +35,7 @@ ldc.datamodel.TableRow.prototype.value = function(field) {
 ldc.datamodel.TableRow.prototype.set = function(field, value) {
 	var u = {}
 	u[field] = value;
-	this.table.update(this._rid, u);
+	this.table.updateRow(this._rid, u);
 }
 
 /**

@@ -232,6 +232,21 @@ ldc.aikuma.SwimLane.prototype.handleEvent = function(e) {
 }
 
 
+/**
+ * Disconnect event handlers from event bus and browser window objects.
+ * Call this method before removing the RichWaveform object.
+ *
+ * @method tearDown
+ */
+ldc.aikuma.SwimLane.prototype.tearDown = function(e) {
+	if (this.ebus) {
+		this.ebus.disconnect(ldc.waveform.WaveformWindowEvent, this);
+		this.ebus.disconnect(ldc.aikuma.SwimLaneRegionEvent, this);
+	}
+	goog.events.unlisten(this.div, 'click', this.handle_ui_events_);
+}
+
+
 ldc.aikuma.SwimLane.prototype.load_table_ = function() {
 	if (this.segs == null) {
 		this.segs = new goog.structs.AvlTree(comp_seg);
@@ -245,29 +260,31 @@ ldc.aikuma.SwimLane.prototype.load_table_ = function() {
 }
 
 ldc.aikuma.SwimLane.prototype.setup_ui_events_ = function() {
-	goog.events.listen(this.div, 'click', function(e) {
-		if (e.target.rid != null) {
-			var trow = this.table.getRow(e.target.rid);
-			if (this.selected != null) {
-				unselect_seg(this.selected);
-			}
-			select_seg(this.selected = e.target);
-			if (this.ebus != null) {
-				var beg = trow.value('offset');
-				var dur = trow.value('length');
-				var ev1 = new ldc.aikuma.SwimLaneRegionEvent(this, this.id, {
-					offset: beg,
-					length: dur
-				}, {
-					offset: trow.value('mapoff'),
-					length: trow.value('maplen')
-				});
-				var ev2 = new ldc.waveform.WaveformRegionEvent(this, beg, dur, null);
-				this.ebus.queue(ev1);
-				this.ebus.queue(ev2);
-			}
+	goog.events.listen(this.div, 'click', this.handle_ui_events_, false, this);
+}
+
+ldc.aikuma.SwimLane.prototype.handle_ui_events_ = function(e) {
+	if (e.target.rid != null) {
+		var trow = this.table.getRow(e.target.rid);
+		if (this.selected != null) {
+			unselect_seg(this.selected);
 		}
-	}, false, this);
+		select_seg(this.selected = e.target);
+		if (this.ebus != null) {
+			var beg = trow.value('offset');
+			var dur = trow.value('length');
+			var ev1 = new ldc.aikuma.SwimLaneRegionEvent(this, this.id, {
+				offset: beg,
+				length: dur
+			}, {
+				offset: trow.value('mapoff'),
+				length: trow.value('maplen')
+			});
+			var ev2 = new ldc.waveform.WaveformRegionEvent(this, beg, dur, null);
+			this.ebus.queue(ev1);
+			this.ebus.queue(ev2);
+		}
+	}
 }
 
 function select_seg(el) {
