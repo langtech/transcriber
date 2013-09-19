@@ -231,12 +231,12 @@ jQuery(function($) {
 				$list[0].innerHTML = '';
 				for (var uuid in aikuma.recording_groups) {
 					if (aikuma.recordings.hasOwnProperty(uuid)) {
-						var json = aikuma.recordings[uuid].json;
+						var json = aikuma.recordings[uuid]['json'];
 						if (json) {
-							var title = json.recording_name;
+							var title = json['recording_name'];
 							var el = $('<option>' + title + '</option>').appendTo($list);
 							el.attr('value', uuid);
-							if (aikuma.recordings[uuid].wav == null) {
+							if (aikuma.recordings[uuid]['wav'] == null) {
 								el.attr('disabled', true);
 							}
 						}
@@ -500,10 +500,10 @@ jQuery(function($) {
 		cur_uuid = uuid;
 
 		var deferred = Q.defer();
-		var url = URL.createObjectURL(recording.wav);
+		var url = URL.createObjectURL(recording['wav']);
 		add_original_audio(url, 'wav');
 
-		decode_audio_file(recording.wav, function(audio_buffer) {
+		decode_audio_file(recording['wav'], function(audio_buffer) {
 			var shape = ldc.waveform.Utils.makeShapeFile(
 				WAVEFORM.max_width, WAVEFORM.min_dur, audio_buffer, 1
 			);
@@ -525,9 +525,9 @@ jQuery(function($) {
 		var make_cb = function(respeaking) {
 			return function() {
 				var sl = add_swimlane(this.result);
-				var image_file = aikuma.users[respeaking.json.creator_uuid]['small.jpg'];
+				var image_file = aikuma.users[respeaking['json']['creator_uuid']]['small.jpg'];
 				var image_url = URL.createObjectURL(image_file);
-				var audio_url = URL.createObjectURL(respeaking.wav);
+				var audio_url = URL.createObjectURL(respeaking['wav']);
 				add_user_image(image_url, sl.id);
 				add_respeaking_audio(audio_url, 'wav', sl.id);
 			};
@@ -536,10 +536,10 @@ jQuery(function($) {
 		tear_down_swimlanes();
 		table_clear_swimlane();
 		for (var i=0, item; item = aikuma.recordings[grp.respeakings[i]]; ++i) {
-			if (item.json && item.wav) {
+			if (item.json && item['wav']) {
 				var reader = new FileReader;
 				reader.onload = make_cb(item);
-				reader.readAsText(item.map);
+				reader.readAsText(item['map']);
 			}
 		}
 
@@ -884,7 +884,4 @@ jQuery(function($) {
 	});
 
 });
-
-function Transcriber() {
-}
 

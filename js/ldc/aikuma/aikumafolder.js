@@ -106,18 +106,18 @@ ldc.aikuma.AikumaFolder.prototype.loadFolder = function(filelist, progress) {
 ldc.aikuma.AikumaFolder.prototype.buildRecordingGroups = function() {
 	for (var uuid in this.recordings) {
 		var item = this.recordings[uuid];
-		if (item.json == null) {
+		if (item['json'] == null) {
 			continue;
 		}
-		if (item.json.original_uuid) {
-			if (this.recording_groups[item.json.original_uuid] == null) {
-				this.recording_groups[item.json.original_uuid] = {
-					original: item.json.original_uuid,
+		if (item['json']['original_uuid']) {
+			if (this.recording_groups[item['json']['original_uuid']] == null) {
+				this.recording_groups[item['json']['original_uuid']] = {
+					original: item['json']['original_uuid'],
 					respeakings: [uuid]
 				};
 			}
 			else {
-				this.recording_groups[item.json.original_uuid].respeakings.push(uuid);
+				this.recording_groups[item['json']['original_uuid']].respeakings.push(uuid);
 			}
 		}
 		else if (this.recording_groups[uuid] == null) {
