@@ -427,9 +427,12 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 		}
 
 		// update cursor
-		this.updateRegion(this.cursor_id, t);
-		if (this.ebus != null) {
-			this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, t));
+		var y = e.clientY - e1.top;
+		if (y >= 0 && y < e1.height) {
+			this.updateRegion(this.cursor_id, t);
+			if (this.ebus != null) {
+				this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, t));
+			}
 		}
 
 	}, false, this);
