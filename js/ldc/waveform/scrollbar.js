@@ -124,7 +124,7 @@ ldc.waveform.Scrollbar.prototype.moveTo = function(t, anchor) {
  * @method handleEvent
  */
 ldc.waveform.Scrollbar.prototype.handleEvent = function(e) {
-	if (e.constructor == ldc.waveform.WaveformWindowEvent) {
+	if (e instanceof ldc.waveform.WaveformWindowEvent) {
 		var a = e.args();
 		if (a.dur) {
 			var x = this.wset.length();
