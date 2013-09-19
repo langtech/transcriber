@@ -571,6 +571,7 @@ jQuery(function($) {
 				if (play_pos >= sel_beg + sel_dur) {
 					$('#stop-btn').trigger('click');
 				}
+				move_waveform(play_pos);
 			}
 		});
 	}
@@ -743,6 +744,22 @@ jQuery(function($) {
 		scrollbar.setWidth(WAVEFORM.width);
 	}
 
+	// Move the waveform to the new position.
+	// Use event bus so that other components like scrollbar are updated
+	// as well.s
+	function move_waveform(t) {
+		var w = get_waveform();
+		if (w) {
+			var wbeg = w.windowStartTime();
+			var wdur = w.windowDuration();
+			if (t < wbeg || t > wbeg + wdur) {
+				t -= wdur / 2;
+				t = Math.max(0, Math.min(t, w.length() - wdur));
+				var e = new ldc.waveform.WaveformWindowEvent(main, t);
+				ebus.queue(e);
+			}
+		}
+	}
 
 	/**
 	 * @method download
