@@ -34,7 +34,7 @@ ldc.waveform.Scrollbar = function(waveformSet, element, ebus) {
 		if (ebus && this.issue_event) {
 			var p = this.widget.getValue();
 			var m = this.widget.getMaximum();
-			var t = this.wset.length() * p / m;
+			var t = (this.wset.length() - this.wset.windowDuration()) * p / m;
 			ebus.queue(new ldc.waveform.WaveformWindowEvent(this, t));
 		}
 	}, false, this);
