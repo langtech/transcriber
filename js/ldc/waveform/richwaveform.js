@@ -298,7 +298,12 @@ ldc.waveform.RichWaveform.prototype.handleEvent = function(e) {
 		if (arg.beg + arg.dur < this.windowStartTime() ||
 			arg.beg > this.windowStartTime() + this.windowDuration()) {
 			var t = arg.beg + (arg.dur / 2) - (this.windowDuration() / 2.0);
-			this.display(t < 0 ? 0 : t);
+			if (t < 0) t = 0;
+			this.display(t);
+			var e1 = new ldc.waveform.WaveformWindowEvent(this, t);
+			if (this.ebus) {
+				this.ebus.queue(e1);
+			}
 		}
 		this.update_selection_(type, arg.beg, arg.dur, arg.waveform);
 	}
