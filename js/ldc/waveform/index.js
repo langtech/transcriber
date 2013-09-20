@@ -14,3 +14,4 @@ goog.require('ldc.waveform.RichWaveform');
 goog.require('ldc.waveform.WaveformCursorEvent');
 goog.require('ldc.waveform.WaveformRegionEvent');
 goog.require('ldc.waveform.WaveformWindowEvent');
+goog.require('ldc.waveform.Utils');

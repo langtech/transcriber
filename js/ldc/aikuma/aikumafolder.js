@@ -21,13 +21,21 @@ ldc.aikuma.AikumaFolder = function() {
 	this.users = {};
 
 	/**
-	 * Collection of objects related to recordings.
+	 * Collection of objects related to recordings. Hash of hash with
+	 * structure: uuid -> <type> -> file_object, where <type> can be
+	 *
+	 *   - json
+	 *   - map
+	 *   - wav
+	 *   - ...
+	 *
 	 * @property recordings
 	 */
 	this.recordings = {};
 
 	/**
-	 * Collection of objects representing a group of recodgins.
+	 * Collection of objects representing a group of recodgins. Keyed
+	 * by uuid of original recording.
 	 *
 	 * Each item has two properties:
 	 *   original -- uuid of the original recording
@@ -91,21 +99,25 @@ ldc.aikuma.AikumaFolder.prototype.loadFolder = function(filelist, progress) {
 	}
 }
 
+/**
+ * Build an index of recording groups. Each recording group consists of
+ * an original recording and an array of respeakings.
+ */
 ldc.aikuma.AikumaFolder.prototype.buildRecordingGroups = function() {
 	for (var uuid in this.recordings) {
 		var item = this.recordings[uuid];
-		if (item.json == null) {
+		if (item['json'] == null) {
 			continue;
 		}
-		if (item.json.original_uuid) {
-			if (this.recording_groups[item.json.original_uuid] == null) {
-				this.recording_groups[item.json.original_uuid] = {
-					original: item.json.original_uuid,
+		if (item['json']['original_uuid']) {
+			if (this.recording_groups[item['json']['original_uuid']] == null) {
+				this.recording_groups[item['json']['original_uuid']] = {
+					original: item['json']['original_uuid'],
 					respeakings: [uuid]
 				};
 			}
 			else {
-				this.recording_groups[item.json.original_uuid].respeakings.push(uuid);
+				this.recording_groups[item['json']['original_uuid']].respeakings.push(uuid);
 			}
 		}
 		else if (this.recording_groups[uuid] == null) {

@@ -7,11 +7,12 @@
  */
 goog.provide('ldc.waveform.RichWaveform');
 goog.require('ldc.waveform.Waveform');
-goog.require('ldc.event');
+goog.require('ldc.waveform.WaveformCursorEvent');
 goog.require('goog.dom');
 goog.require('goog.style');
 goog.require('goog.object');
 goog.require('goog.events');
+goog.require('goog.cssom');
 
 UNSELECTABLE_CSS_ADDED = false;
 
@@ -22,7 +23,19 @@ UNSELECTABLE_CSS_ADDED = false;
  * region called 'selection' that is updated when user uses mouse to mark a
  * region or when it receives WaveformRegionEvent.
  *
- * Generates and listens on MouseMoveEvent.
+ * Listens to the following events:
+ *
+ *  - {{#crossLink "waveform.WaveformCursorEvent"}}{{/crossLink}}
+ *  - {{#crossLink "waveform.WaveformRegionEvent"}}{{/crossLink}}
+ *  - {{#crossLink "waveform.WaveformWindowEvent"}}{{/crossLink}}
+ *  - {{#crossLink "waveform.WaveformSelectEvent"}}{{/crossLink}}
+ *
+ * Emits the following events:
+ *
+ *  - {{#crossLink "waveform.WaveformCursorEvent"}}{{/crossLink}}
+ *  - {{#crossLink "waveform.WaveformRegionEvent"}}{{/crossLink}}
+ *  - {{#crossLink "waveform.WaveformWindowEvent"}}{{/crossLink}}
+ *  - {{#crossLink "datamodel.TableUpdateRowEvent"}}{{/crossLink}}
  *
  * @class RichWaveform
  * @extends waveform.Waveform
@@ -37,7 +50,7 @@ ldc.waveform.RichWaveform = function(buffer, canvas, channel, ebus) {
 	goog.base(this, buffer, canvas, channel);
 
 	// wrap the canvas element
-	this.container = goog.dom.createDom('div', {class:'unselectable'});
+	this.container = goog.dom.createDom('div', {'class':'unselectable'});
 	this.container.style.position = 'relative';
 	this.canvas.style.cursor = 'crosshair';
 	goog.dom.insertSiblingAfter(this.container, canvas);
@@ -88,6 +101,7 @@ ldc.waveform.RichWaveform = function(buffer, canvas, channel, ebus) {
 	}
 
 	// listen on mouse event so that we animate cursor and selection.
+	this.event_listener_keys = [];  // to be used for tearing down
 	this.setup_mouse_events_();
 }
 goog.inherits(ldc.waveform.RichWaveform, ldc.waveform.Waveform);
@@ -119,8 +133,8 @@ ldc.waveform.RichWaveform.prototype.addRegion = function(t, dur, color) {
 		html: div,
 		pos: t,
 		dur: dur==null || dur < 0 ? 0 : dur,
-		color: color==null ? 'red' : color,
-	}
+		color: color==null ? 'red' : color
+	};
 
 	this.regions[id] = region;
 	this.render_region_(region);
@@ -284,7 +298,12 @@ ldc.waveform.RichWaveform.prototype.handleEvent = function(e) {
 		if (arg.beg + arg.dur < this.windowStartTime() ||
 			arg.beg > this.windowStartTime() + this.windowDuration()) {
 			var t = arg.beg + (arg.dur / 2) - (this.windowDuration() / 2.0);
-			this.display(t < 0 ? 0 : t);
+			if (t < 0) t = 0;
+			this.display(t);
+			var e1 = new ldc.waveform.WaveformWindowEvent(this, t);
+			if (this.ebus) {
+				this.ebus.queue(e1);
+			}
 		}
 		this.update_selection_(type, arg.beg, arg.dur, arg.waveform);
 	}
@@ -299,7 +318,11 @@ ldc.waveform.RichWaveform.prototype.handleEvent = function(e) {
 ldc.waveform.RichWaveform.prototype.render_region_ = function(r) {
 	var x = this.t2p(r.pos);
 	var y = this.t2p(r.pos + r.dur);
-	if (y < 0 || x >= this.canvas.width) {
+	if (x == null || y == null) {
+		// display hadn't been initialized, so t2p() returned null
+		return;
+	}
+	else if (y < 0 || x >= this.canvas.width) {
 		r.html.style.display = 'none';
 	}
 	else {
@@ -362,7 +385,9 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 	var sel = this.getSelection();
 	var edge = null;
 
-	goog.events.listen(document.body, 'mousemove', function(e) {
+	var k = null;  // event listener key
+
+	k = goog.events.listen(document.body, 'mousemove', function(e) {
 		var wbeg = this.windowStartTime();
 		var wdur = this.windowDuration();
 		var e1 = this.container.getBoundingClientRect();
@@ -407,12 +432,17 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 		}
 
 		// update cursor
-		this.updateRegion(this.cursor_id, t);
-		if (this.ebus != null) {
-			this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, t));
+		var y = e.clientY - e1.top;
+		if (y >= 0 && y < e1.height) {
+			this.updateRegion(this.cursor_id, t);
+			if (this.ebus != null) {
+				this.ebus.queue(new ldc.waveform.WaveformCursorEvent(this, t));
+			}
 		}
 
 	}, false, this);
+
+	this.event_listener_keys.push(k);
 
 	goog.events.listen(this.container, 'mousedown', function(e) {
 		if (e.button == 0) {  // left mouse button
@@ -462,7 +492,7 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 		}
 	});
 
-	goog.events.listen(document.body, 'mouseup', function(e) {
+	k = goog.events.listen(document.body, 'mouseup', function(e) {
 		mousedown = false;
 		if (edge != null && sel.rid != null && this.ebus != null) {
 			var u = {offset:sel.pos, length:sel.dur};
@@ -471,6 +501,24 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 		}
 		edge = null;
 	}, false, this);
+
+	this.event_listener_keys.push(k);
+}
+
+/**
+ * Disconnect event handlers from event bus and browser window objects.
+ * Call this method before removing the RichWaveform object.
+ *
+ * @method tearDown
+ */
+ldc.waveform.RichWaveform.prototype.tearDown = function() {
+	for (var i=0, k; k = this.event_listener_keys[i]; ++i) {
+		goog.events.unlistenByKey(k);
+	}
+	this.ebus.disconnect(ldc.waveform.WaveformCursorEvent, this);
+	this.ebus.disconnect(ldc.waveform.WaveformRegionEvent, this);
+	this.ebus.disconnect(ldc.waveform.WaveformWindowEvent, this);
+	this.ebus.disconnect(ldc.waveform.WaveformSelectEvent, this);
 }
 
 })();

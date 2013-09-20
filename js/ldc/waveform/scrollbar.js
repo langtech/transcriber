@@ -11,6 +11,10 @@ goog.require('goog.cssom');
 /**
  * Turn an html element into a scrollbar widget for waveforms.
  * 
+ * Emits and listens to the following events:
+ *
+ *  - {{#crossLink "waveform.WaveformWindowEvent"}}{{/crossLink}}
+ *
  * @class Scrollbar
  * @constructor
  * @param {WaveformSet} waveformSet
@@ -30,7 +34,7 @@ ldc.waveform.Scrollbar = function(waveformSet, element, ebus) {
 		if (ebus && this.issue_event) {
 			var p = this.widget.getValue();
 			var m = this.widget.getMaximum();
-			var t = this.wset.length() * p / m;
+			var t = (this.wset.length() - this.wset.windowDuration()) * p / m;
 			ebus.queue(new ldc.waveform.WaveformWindowEvent(this, t));
 		}
 	}, false, this);
@@ -120,7 +124,7 @@ ldc.waveform.Scrollbar.prototype.moveTo = function(t, anchor) {
  * @method handleEvent
  */
 ldc.waveform.Scrollbar.prototype.handleEvent = function(e) {
-	if (e.constructor == ldc.waveform.WaveformWindowEvent) {
+	if (e instanceof ldc.waveform.WaveformWindowEvent) {
 		var a = e.args();
 		if (a.dur) {
 			var x = this.wset.length();
