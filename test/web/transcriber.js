@@ -15,6 +15,8 @@ jQuery(function($) {
 
 	var main = this;
 	var play_pos = 0.0;
+	var play_beg = null;
+	var play_end = null;
 	var sel_beg = 0.0;
 	var sel_dur = 0.0;
 	var sel_waveform;
@@ -110,7 +112,11 @@ jQuery(function($) {
 	$('#play-btn').on('click', function(e) {
 		var text = $(this).text().trim();
 		if (text == 'Play') {
-			$('#player').jPlayer('play', sel_beg);
+			play_beg = sel_beg;
+			play_end = sel_beg + sel_dur;
+			if (play_beg == play_end)
+				play_end = get_waveform().length();
+			$('#player').jPlayer('play', play_beg);
 			$(this).button('play');
 		}
 		else if (text == 'Resume') {
@@ -125,7 +131,7 @@ jQuery(function($) {
 	});
 
 	$('#stop-btn').on('click', function() {
-		$('#player').jPlayer('stop');
+		$('#player').jPlayer('pause', play_beg);
 		$('#play-btn').button('reset');
 		$('#stop-btn').prop('disabled', true);
 	});
@@ -568,7 +574,7 @@ jQuery(function($) {
 				$('#pos').text(Math.round(play_pos * 10000) / 10000);
 				var ev = new ldc.waveform.WaveformCursorEvent(e.jPlayer, play_pos);
 				ebus.queue(ev);
-				if (play_pos >= sel_beg + sel_dur) {
+				if (play_pos >= play_end) {
 					$('#stop-btn').trigger('click');
 				}
 				move_waveform(play_pos);
@@ -830,11 +836,6 @@ jQuery(function($) {
 			e.preventDefault();
 			if (e.shiftKey) {
 				$('#stop-btn').trigger('click');
-			}
-			if (sel_rid == null) {
-				sel_beg = 0;
-				var w = get_waveform();
-				sel_dur = w == null ? 0 : w.length();
 			}
 			$('#play-btn').trigger('click');
 		}
