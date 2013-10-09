@@ -831,7 +831,7 @@ jQuery(function($) {
 			}
 			$('#play-btn').trigger('click');
 		}
-		else if (e.keyCode == 8 && e.ctrlKey) {  // ctrl+backspace
+		else if (e.keyCode == 8 && e.ctrlKey && special.length == 1) {  // ctrl+backspace
 			e.preventDefault();
 			if (sel_rid != null) {
 				var beg = table.getCell(sel_rid, 'offset');
@@ -861,6 +861,20 @@ jQuery(function($) {
 					select_segment(prev_row.rid());
 				}
 			}
+		}
+		else if (e.keyCode == 13 && e.shiftKey && special.length == 1) {
+			if (sel_rid != null)
+				return;
+			if (sel_dur < 0.000001)
+				return;
+			e.preventDefault();
+			var rid = ldc.datamodel.Table.getNewRid();
+			var e = new ldc.datamodel.TableAddRowEvent(main, rid, {
+				waveform: get_waveform_id(),
+				offset: sel_beg,
+				length: sel_dur
+			});
+			ebus.queue(e);
 		}
 		else if (e.keyCode == 13) {  // return (split)
 			if (cur_pos == null) {
