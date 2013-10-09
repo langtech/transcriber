@@ -131,7 +131,7 @@ ldc.datamodel.Table.prototype.forEach = function(callback, matcher) {
 	var f = matcher == null ? function() {return true} : matcher;
 	for (var k in this.rows) {
 		if (this.rows.hasOwnProperty(k)) {
-			var trow = this.getRow(k);
+			var trow = this.getRow(parseInt(k));
 			if (f(trow) == true) {
 				callback(trow);
 			}
@@ -146,7 +146,26 @@ ldc.datamodel.Table.prototype.forEach = function(callback, matcher) {
  * @return {Object}
  */
 ldc.datamodel.Table.prototype.getRow = function(rid) {
-	return new ldc.datamodel.TableRow(this, rid);
+	if (this.rows.hasOwnProperty(rid)) {
+		return new ldc.datamodel.TableRow(this, parseInt(rid));
+	}
+}
+
+/**
+ * Return a row as an object.
+ *
+ * @method getObj
+ * @param {Number} rid Row index,
+ * @return {Object}
+ */
+ldc.datamodel.Table.prototype.getObj = function(rid) {
+	if (this.rows.hasOwnProperty(rid)) {
+		var obj = {};
+		for (var i=0; i < this.header_.length; ++i) {
+			obj[this.header_[i]] = this.rows[rid][i];
+		}
+		return obj;
+	}
 }
 
 /**
@@ -156,8 +175,10 @@ ldc.datamodel.Table.prototype.getRow = function(rid) {
  * @return {Any type}
  */
 ldc.datamodel.Table.prototype.getCell = function(rid, field) {
-	var idx = this.header_.indexOf(field);
-	return this.rows[rid][idx];
+	if (this.rows.hasOwnProperty(rid)) {
+		var idx = this.header_.indexOf(field);
+		return this.rows[rid][idx];
+	}
 }
 
 /**
@@ -229,6 +250,10 @@ ldc.datamodel.Table.prototype.handleEvent = function(event) {
 			}
 		}
 		this.addRow(row, args.rid);
+	}
+	else if (event instanceof ldc.datamodel.TableDeleteRowEvent) {
+		var rid = event.args().rid;
+		this.deleteRow(rid);
 	}
 }
 

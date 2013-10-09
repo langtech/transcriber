@@ -18,16 +18,16 @@ var UI_TEXT_CLASS = 'segmentedit-textwidget';
  *
  * @class SegmentEdit
  * @constructor
- * @param {TableRow} row A table row of Transcript table.
+ * @param {Number} rid Rid of the corresponding TableRow object.
+ * @param {Object} data An object with transcript property which contains
+ *    the transcription text.
  */
-ldc.textdisplay.SegmentEdit = function(row) {
-	this.trow = row;
+ldc.textdisplay.SegmentEdit = function(rid, data) {
 	this.ui_style = {
 		text_bg_color: '#EEEEFF',
 		margin: '5px'
 	}
 
-	var rid = row.rid();
 	var html_rid = make_html_id(rid);
 	var dom = goog.dom.getElement(html_rid);
 	if (dom == null) {
@@ -38,7 +38,7 @@ ldc.textdisplay.SegmentEdit = function(row) {
 			class: UI_TEXT_CLASS,
 			contentEditable: 'true',
 			style: 'display: table-cell; width: 100%'
-		}, row.value('transcript'));
+		}, data['transcript']);
 		var wrapper = goog.dom.createDom('div', {
 			style: 'display: table-row'
 		}, bullet, text);
