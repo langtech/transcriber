@@ -45,3 +45,17 @@ ldc.datamodel.TableRow.prototype.set = function(field, value) {
 ldc.datamodel.TableRow.prototype.rid = function() {
 	return this._rid;
 }
+
+/**
+ * Convert this table row into an key-value pairs object.
+ *
+ * @method toObj
+ * @return {Object}
+ */
+ldc.datamodel.TableRow.prototype.toObj = function() {
+	var obj = {};
+	this.table.header().forEach(function(h) {
+		obj[h] = this.value(h);
+	}, this);
+	return obj;
+}

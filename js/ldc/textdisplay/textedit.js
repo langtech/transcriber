@@ -45,10 +45,8 @@ ldc.textdisplay.TextEdit = function(id, segWidget, eventBus, segFilter) {
 	this.container = goog.dom.createDom('div', {'class':'textedit'});
 	goog.dom.append(goog.dom.getElement(id), this.container);
 
-	// Rid-to-segment-widget index. This is a self-balancing binary search tree.
-	// The helper function comp_seg is used to make segments orderd by start
-	// and end offsets.
-	this.rid2se = new goog.structs.AvlTree(comp_seg);
+	this.rids = [];   // list of rids, sorted by offsets
+	this.spans = [];  // list of {beg:v1, end:v2}, sorted by beg and then end property
 	this.table = null;
 	var that = this;
 	segWidget.installEventListener(this.container, function(e) {
@@ -86,15 +84,16 @@ ldc.textdisplay.TextEdit = function(id, segWidget, eventBus, segFilter) {
  * @param {Table} table
  */
 ldc.textdisplay.TextEdit.prototype.setTable = function(table) {
-	this.rid2se.clear();
+	this.rids = [];
+	this.spans = [];
 	this.container.innerHTML = '';
 	this.table = table;
 	var that = this;
-	table.forEach(function(segment) {
-		that.rid2se.add(segment);
+	table.forEach(function(row) {
+		insort(rids, spans, row.rid(), row.toObj());
 	}, this.filter);
-	this.rid2se.inOrderTraverse(function(segment) {
-		var se = new that.segWidget(segment);
+	table.forEach(function(row) {
+		var se = new that.segWidget(row.rid(), row.toObj());
 		goog.dom.appendChild(that.container, se.dom());
 	});
 }
@@ -105,8 +104,9 @@ ldc.textdisplay.TextEdit.prototype.setTable = function(table) {
  * @return {Object} An instance of the segment widget.
  */
  ldc.textdisplay.TextEdit.prototype.findSegment = function(rid) {
- 	var segment = new ldc.datamodel.TableRow(this.table, rid);
- 	return new this.segWidget(segment);
+ 	if (this.table && this.table.getCell(rid, 'offset')) {
+ 		return new this.segWidget(rid, this.table.getObj(rid));
+ 	}
  }
 
 /**
@@ -116,37 +116,33 @@ ldc.textdisplay.TextEdit.prototype.setTable = function(table) {
 ldc.textdisplay.TextEdit.prototype.handleEvent = function(event) {
 	if (event instanceof ldc.datamodel.TableUpdateRowEvent) {
 		var arg = event.args();  // update object
-		var se = this.findSegment(arg.rid);
-		if (se != null) {
-			se.update(arg.data);
+		var rid = arg.rid;
+		var flag = arg.data.hasOwnProperty('offset') || arg.data.hasOwnProperty('length');
+		if (flag) {
+			this.remove_seg_(rid);
+			var seg = this.table.getObj(rid);
+			for (var k in arg.data)
+				seg[k] = arg.data[k];
+			this.add_seg_(rid, seg);
+		}
+		else {
+			var se = this.findSegment(rid);
+			se && se.update(arg.data);
 		}
 	}
 	else if (event instanceof ldc.datamodel.TableAddRowEvent) {
 		var arg = event.args();
-		if (this.table != null) {
-			var segment = new ldc.datamodel.TableRow(this.table, arg.rid);
-			if (this.filter(segment) == false) {
-				return;
+		var obj = {
+			value: function(field) {
+				return arg.data[field];
+			},
+			rid: function() {
+				return arg.rid;
 			}
-		}
-		var smax = this.rid2se.getCount() > 0 ? this.rid2se.getMaximum() : null;
-		var s = {
-			value: function(k) { return arg.data[k]; },
-			rid: function() { return arg.rid; }
 		};
-		if (smax != null && comp_seg(s, smax) < 0) {
-			var before = null;
-			var seg_widget = this.segWidget;
-			this.rid2se.inOrderTraverse(function(x) {
-				var se = new seg_widget(x);
-				before = se.dom();
-				return true;
-			}, s);
-			this.add_seg_(arg.rid, before);
-		}
-		else {
-			this.add_seg_(arg.rid);
-		}
+		if (this.table != null && this.filter(obj) == false)
+			return;
+		this.add_seg_(arg.rid, arg.data);
 		if (this.ebus != null) {
 			var e = new ldc.waveform.WaveformSelectEvent(
 				this, arg.data.offset, arg.data.length, arg.data.waveform, arg.rid
@@ -166,20 +162,20 @@ ldc.textdisplay.TextEdit.prototype.handleEvent = function(event) {
  * @method add_seg_
  * @private
  * @param {Number} rid
- * @param {HTMLElement} before The new dom object for the rid is inserted
- *   before this element.
+ * @param {Object} data Object with offset and length properties.
  */
-ldc.textdisplay.TextEdit.prototype.add_seg_ = function(rid, before) {
+ldc.textdisplay.TextEdit.prototype.add_seg_ = function(rid, data) {
 	if (this.table) {
-		var seg = new ldc.datamodel.TableRow(this.table, rid);
-		var se = new this.segWidget(seg);
-		if (before) {
-			goog.dom.insertSiblingBefore(se.dom(), before);
+		var se = new this.segWidget(rid, data);
+		var i = insort(this.rids, this.spans, rid, data);
+		if (i + 1 < this.rids.length) {
+			var rid1 = this.rids[i + 1];
+			var se1 = new this.segWidget(rid1, this.table.getObj(rid1));
+			goog.dom.insertSiblingBefore(se.dom(), se1.dom());
 		}
 		else {
 			goog.dom.appendChild(this.container, se.dom());
 		}
-		this.rid2se.add(seg);
 		se.focus();
 	}
 }
@@ -193,12 +189,14 @@ ldc.textdisplay.TextEdit.prototype.add_seg_ = function(rid, before) {
  */
 ldc.textdisplay.TextEdit.prototype.remove_seg_ = function(rid) {
 	if (this.table) {
-		var seg = new ldc.datamodel.TableRow(this.table, rid);
-		var se = new this.segWidget(seg);
-		this.rid2se.remove(seg);
+		var se = new this.segWidget(rid, null);
+		var i = this.rids.indexOf(rid);
+		this.rids.splice(i, 1);
+		this.spans.splice(i, 1);
 		goog.dom.removeNode(se.dom());
 	}
 }
+
 
 // Returns -1, 0, or 1 respectively if a < b, a == b, or a > b.
 function comp(a, b) {
@@ -213,20 +211,45 @@ function comp(a, b) {
 	}
 }
 
-// Comparison function for Segment objects. Comparison is done on start and
-// end offsets. -1, 0, or 1 is returned respectively if a precedes b, a and b
-// span the same region, or b precedes a.
-function comp_seg(a, b) {
-	var s1 = a.value('offset');
-	var s2 = b.value('offset');
-	var c = comp(s1, s2);
-	if (c == 0) {
-		c == comp(s1 + a.value('length'), s2 + b.value('length'));
-		return c == 0 ? comp(a.rid(), b.rid()) : c;
+
+// @param {Object} a
+// @param {Object} b
+// @return {Number} -1 (a<b), 0 (a=b), or 1 (a>b).
+function comp_span(a, b) {
+	var c = comp(a.beg, b.beg);
+	return c == 0 ? comp(a.end, b.end) : c;
+}
+
+
+// @param {Array} rids Array of rids
+// @param {Array} spans Array of {beg:v1, end:v2} objects
+// @param {Number} rid Rid for the inserted row
+// @param {Object} seg An object with offset and length properties.
+// @return {Number} Insertion position.
+//
+// seg is a new segment to be added to the text widget. Insert its rid to
+// rids, and create a span object and insert it into spans. Both rids and spans
+// are kept sorted by start offset, end offset and rid in that order.
+function insort(rids, spans, rid, seg) {
+	var s = 0;
+	var t = rids.length;
+	var span = {beg:seg.offset};
+	span.end = span.beg + seg.length;
+	while (s < t) {
+		var i = Math.floor((t + s) / 2);
+		var c = comp_span(spans[i], span);
+		if (c == 0)
+			c = comp(rids[i], rid);
+		if (c < 0)
+			s = i + 1;
+		else if (c > 0)
+			t = i;
+		else
+			s = t = i;
 	}
-	else {
-		return c;
-	}
+	rids.splice(s, 0, rid);
+	spans.splice(s, 0, span);
+	return s;
 }
 
 

@@ -339,6 +339,7 @@ ldc.waveform.RichWaveform.prototype.render_region_ = function(r) {
 		r.html.style.height = this.canvas.height + 'px';
 		r.html.style.backgroundColor = r.color;
 		r.html.style.position = 'absolute';
+		r.html.style.pointerEvents = 'none';
 		r.html.style.top = '0px';
 		r.html.style.display = 'block';
 		if (r.rid != null) {
@@ -381,9 +382,9 @@ ldc.waveform.RichWaveform.prototype.render_region_ = function(r) {
 ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 	// listen on mouse events
 	var mousedown = false;
+	var resizing = false;
 	var selection_anchor = 0;
 	var sel = this.getSelection();
-	var edge = null;
 
 	var k = null;  // event listener key
 
@@ -410,10 +411,6 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 					wbeg1 = t - wdur;
 					this.display(wbeg1);
 				}
-			}
-
-			if (edge == null) {
-				this.unlinkRegion(this.selection_id);
 			}
 
 			var beg = Math.min(t, selection_anchor);
@@ -454,9 +451,13 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 				return;
 			}
 
-			if (edge != null) {
-				// resizing existing region
-				selection_anchor = edge;
+			if (Math.abs(sel.html.offsetLeft - x) < 2) {
+				selection_anchor = sel.pos + sel.dur;
+				resizing = true;
+			}
+			else if (Math.abs(sel.html.offsetLeft + sel.html.offsetWidth - x - 1) < 2) {
+				selection_anchor = sel.pos;
+				resizing = true;
 			}
 			else {
 				// starting a new region
@@ -466,40 +467,32 @@ ldc.waveform.RichWaveform.prototype.setup_mouse_events_ = function() {
 					this.ebus.queue(new ldc.waveform.WaveformRegionEvent(this, t, 0));
 				}
 				selection_anchor = t;
+				resizing = false;
 			}
 			mousedown = true;
 		}
 	}, false, this);
 
-	goog.events.listen(sel.html, 'mousemove', function(e) {
-		if (e.offsetX < 2) {
-			sel.html.style.cursor = "w-resize";
-		}
-		else if (e.offsetX >= sel.html.offsetWidth - 2) {
-			sel.html.style.cursor = "e-resize";
+	goog.events.listen(this.container, 'mousemove', function(e) {
+		var x = e.target.offsetLeft + e.offsetX;
+		if (Math.abs(sel.html.offsetLeft - x) < 2 ||
+			Math.abs(sel.html.offsetLeft + sel.html.offsetWidth - x - 1) < 2) {
+			e.target.style.cursor = 'col-resize';
 		}
 		else {
-			sel.html.style.cursor = this.canvas.style.cursor;
+			e.target.style.cursor = 'crosshair';
 		}
-	}, false, this);
 
-	goog.events.listen(sel.html, 'mousedown', function(e) {
-		if (e.offsetX < 2) {
-			edge = sel.pos + sel.dur;
-		}
-		else if (e.offsetX >= sel.html.offsetWidth - 2) {
-			edge = sel.pos;
-		}
-	});
+	}, false, this);
 
 	k = goog.events.listen(document.body, 'mouseup', function(e) {
 		mousedown = false;
-		if (edge != null && sel.rid != null && this.ebus != null) {
+		if (resizing && sel.rid != null && this.ebus != null) {
 			var u = {offset:sel.pos, length:sel.dur};
 			var ev = new ldc.datamodel.TableUpdateRowEvent(this, sel.rid, u);
 			this.ebus.queue(ev);
 		}
-		edge = null;
+		resizing = false;
 	}, false, this);
 
 	this.event_listener_keys.push(k);

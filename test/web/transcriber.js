@@ -14,6 +14,7 @@ jQuery(function($) {
 	var AIKUMA_BASE = '/transcriber/test/data/aikuma';
 
 	var main = this;
+	var cur_pos = null;
 	var play_pos = 0.0;
 	var play_beg = null;
 	var play_end = null;
@@ -70,11 +71,19 @@ jQuery(function($) {
 	var aikuma = new ldc.aikuma.AikumaFolder;
 
 	function get_waveform_id() {
-		return Object.keys(waveforms)[0];
+		for (var k in waveforms) {
+			if (waveforms.hasOwnProperty(k)) {
+				return waveforms[k].id;
+			}
+		}
 	}
 
 	function get_waveform() {
-		return waveforms[get_waveform_id()];
+		for (var k in waveforms) {
+			if (waveforms.hasOwnProperty(k)) {
+				return waveforms[k];
+			}
+		}
 	}
 
 	function select_segment(rid) {
@@ -147,7 +156,8 @@ jQuery(function($) {
 		var wid = table.getCell(sel_rid, 'waveform');
 		var waveform = waveforms[wid];
 		waveform.unlinkRegion(waveform.getSelection().id);
-		var e = new ldc.datamodel.TableDeleteRowEvent(main, sel_rid);
+		var e = new ldc.datamodel.TableDeleteRowEvent(table, sel_rid);
+		table.deleteRow(sel_rid);
 		ebus.queue(e);
 		$('#remove-seg-btn').prop('disabled', true);
 		$('#create-seg-btn').prop('disabled', false);
@@ -166,7 +176,7 @@ jQuery(function($) {
 	});
 
 	// New Transcript menu
-	$('#new-transcript-menu').on('click', new_transcript);
+	$('#new-transcript-menu').on('click', table_clear_transcript);
 
 	// Open Transcript menu
 
@@ -301,6 +311,7 @@ jQuery(function($) {
 	// initialize event bus connections
 	ebus.connect(ldc.waveform.WaveformCursorEvent, {
 		handleEvent: function(e) {
+			cur_pos = e.args();
 			$('#pos').text(Math.round(e.args() * 10000) / 10000);
 		}
 	});
@@ -343,6 +354,7 @@ jQuery(function($) {
 	// a hook for debugger
 	G = {
 		table: table,
+		textedit: textedit,
 		aikuma: aikuma
 	}
 
@@ -404,20 +416,6 @@ jQuery(function($) {
 			sl.tearDown();
 		}
 		swimlanes = [];
-	}
-
-
-	/**
-	 * Create a new empty transcript.
-	 *
-	 * @method new_transcript
-	 */
-	function new_transcript() {
-		table_clear_transcript();
-		var wid = Object.keys(waveforms)[0];
-		var big_segment = [wid, 0, waveforms[wid].length()];
-		table.addRow(big_segment);
-		textedit.setTable(table);
 	}
 
 
@@ -515,16 +513,10 @@ jQuery(function($) {
 			);
 			setup_waveform(shape);
 
-			var segs = transcript_segments();
-			if (segs.length == 0) {
-				new_transcript();
-			}
-			else {
-				var w = get_waveform_id();
-				segs.forEach(function(rid) {
-					table.updateRow(rid, {waveform:w});
-				});
-			}
+			var w = get_waveform_id();
+			transcript_segments().forEach(function(rid) {
+				table.updateRow(rid, {waveform:w});
+			});
 			deferred.resolve();
 		});
 
@@ -839,7 +831,7 @@ jQuery(function($) {
 			}
 			$('#play-btn').trigger('click');
 		}
-		else if (e.keyCode == 8 && e.ctrlKey) {  // ctrl+backspace
+		else if (e.keyCode == 8 && e.ctrlKey && special.length == 1) {  // ctrl+backspace
 			e.preventDefault();
 			if (sel_rid != null) {
 				var beg = table.getCell(sel_rid, 'offset');
@@ -870,26 +862,73 @@ jQuery(function($) {
 				}
 			}
 		}
-		else if (e.keyCode == 13) {  // return
-			var t = play_pos;
+		else if (e.keyCode == 13 && e.shiftKey && special.length == 1) {
+			if (sel_rid != null)
+				return;
+			if (sel_dur < 0.000001)
+				return;
 			e.preventDefault();
-			var rows = [];
+			var rid = ldc.datamodel.Table.getNewRid();
+			var e = new ldc.datamodel.TableAddRowEvent(main, rid, {
+				waveform: get_waveform_id(),
+				offset: sel_beg,
+				length: sel_dur
+			});
+			ebus.queue(e);
+		}
+		else if (e.keyCode == 13) {  // return (split)
+			if (cur_pos == null) {
+				return;
+			}
+			var t = cur_pos;
+			e.preventDefault();
+
+			// find overlapping segments
+			var row_to_split = null;
+			var overlaps = 0;
+			var gap_beg = 0;
+			var gap_end = get_waveform().length();
 			table.forEach(function(row) {
 				if (row.value('waveform') != null) {
 					// this is a real segment, a segment on the original audio
 					var beg = row.value('offset');
 					var end = beg + row.value('length');
 					if (t > beg && t < end) {
-						rows.push(row);
+						if (row.rid() == sel_rid) {
+							row_to_split = row;
+						}
+						overlaps += 1;
+					}
+					if (end <= t && end > gap_beg) {
+						gap_beg = end;
+					}
+					if (beg >= t && beg < gap_end) {
+						gap_end = beg;
 					}
 				}
 			});
-			for (var i=0, row; row = rows[i]; ++i) {
-				var beg = row.value('offset');
-				var end = beg + row.value('length');
+
+			if (overlaps == 0) {
+				// There's no overlapping segments. Two new segments should be created.
+				// Find a span to split.
+				var row, rid, e;
+
+				row = {offset: gap_beg, length: t - gap_beg, waveform: get_waveform_id()};
+				rid = ldc.datamodel.Table.getNewRid();
+				e = new ldc.datamodel.TableAddRowEvent(main, rid, row);
+				ebus.queue(e);
+
+				row = {offset: t, length: gap_end - t, waveform: get_waveform_id()};
+				rid = ldc.datamodel.Table.getNewRid();
+				e = new ldc.datamodel.TableAddRowEvent(main, rid, row);
+				ebus.queue(e);
+			}
+			else if (row_to_split != null) {
+				var beg = row_to_split.value('offset');
+				var end = beg + row_to_split.value('length');
 				var new_length = t - beg;
 				var update = {length:new_length};
-				var e = new ldc.datamodel.TableUpdateRowEvent(main, row.rid(), update);
+				var e = new ldc.datamodel.TableUpdateRowEvent(main, row_to_split.rid(), update);
 				ebus.queue(e);
 				var new_row = {offset: t, length: end - t, waveform: get_waveform_id()};
 				var new_rid = ldc.datamodel.Table.getNewRid();

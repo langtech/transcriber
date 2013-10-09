@@ -15,15 +15,17 @@ var UI_TEXT_CLASS = 'segmentedit-textwidget';
  * A segment widget for ldc.textdisplay.TextEdit.
  *
  * @class AikumaSegment
+ * @constructor
+ * @param {Number} rid Rid of the corresponding TableRow object.
+ * @param {Object} data An object with transcript and translation properties
+ *    which are strings.
  */
-ldc.aikuma.AikumaSegment = function(row) {
-	this.trow = row;
+ldc.aikuma.AikumaSegment = function(rid, data) {
 	this.ui_style = {
 		text_bg_color: '#EEEEFF',
 		margin: '5px'
 	}
 
-	var rid = row.rid();
 	var html_rid = make_html_id(rid);
 	var dom = goog.dom.getElement(html_rid);
 	if (dom == null) {
@@ -34,7 +36,7 @@ ldc.aikuma.AikumaSegment = function(row) {
 			class: UI_TEXT_CLASS,
 			contentEditable: 'true',
 			style: 'display: table-cell; width: 100%'
-		}, row.value('transcript'));
+		}, data['transcript']);
 		var wrapper1 = goog.dom.createDom('div', {
 			style: 'display: table-row'
 		}, bullet, text);
@@ -46,7 +48,7 @@ ldc.aikuma.AikumaSegment = function(row) {
 			class: UI_TEXT_CLASS,
 			contentEditable: 'true',
 			style: 'display: table-cell; width: 100%'
-		}, row.value('translation'));
+		}, data['translation']);
 		var wrapper2 = goog.dom.createDom('div', {
 			style: 'display: table-row'
 		}, empty, trans);
