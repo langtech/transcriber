@@ -196,6 +196,9 @@ ldc.aikuma.SwimLane.prototype.render_segment_ = function(beg, dur) {
  *
  * @method setTable
  * @param {datamodel.Table} table A Table object for Aikuma application.
+ *  The table should have 2 numeric columns: `offset` and `length`.
+ *  Offset stores the start time of segments, and length is for their
+ *  size. Both should be in seconds.
  */
 ldc.aikuma.SwimLane.prototype.setTable = function(table) {
 	this.table = table;
