@@ -53,7 +53,7 @@ ldc.datamodel.Table.getNewRid = function() {
  * @method header
  * @return {Array}
  */
-ldc.datamodel.Table.header = function() {
+ldc.datamodel.Table.prototype.header = function() {
 	return this.header_;
 }
 
