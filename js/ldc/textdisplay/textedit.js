@@ -52,7 +52,7 @@ ldc.textdisplay.TextEdit = function(id, segWidget, eventBus, segFilter) {
 	segWidget.installEventListener(this.container, function(e) {
 		if (that.table) {
 			if (e.eventType == segWidget.EventType.CHANGE) {
-				var ev = new ldc.datamodel.TableUpdateRowEvent(that, e.rid, e.data);
+				var ev = new ldc.datamodel.TableUpdateRowEvent(that, that.table, e.rid, e.data);
 				eventBus.queue(ev);
 			}
 			else if (e.eventType == segWidget.EventType.SELECT) {

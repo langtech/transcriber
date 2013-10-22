@@ -34,6 +34,7 @@ jQuery(function($) {
 		'waveform',    // waveform id (null if not bound to a waveform)
 		'offset',      // start offset of the region
 		'length',      // lenght of the region
+		'speaker',     // speaker
 		'transcript',  // transcript for the region
 		'translation', // translation of the transcript
 		'swimlane',    // swimlane id (null if not bound to a swimlane)
@@ -67,6 +68,11 @@ jQuery(function($) {
 	var waveforms = {};
 	var swimlanes = [];
 
+	var speaker_swimlanes = new ldc.aikuma.SpeakerSwimLanes(
+		document.getElementById('speaker-swimlanes'),
+		ebus,
+		is_transcript_segment
+	);
 
 	var aikuma = new ldc.aikuma.AikumaFolder;
 
@@ -359,6 +365,7 @@ jQuery(function($) {
 	}
 
 	textedit.setTable(table);
+	speaker_swimlanes.setTable(table);
 
 
 	/**

@@ -12,3 +12,4 @@ goog.require('ldc.aikuma.SwimLaneRegionEvent');
 goog.require('ldc.aikuma.AikumaFolder');
 goog.require('ldc.aikuma.AikumaSegment');
 goog.require('ldc.aikuma.AikumaTranscript');
+goog.require('ldc.aikuma.SpeakerSwimLanes');

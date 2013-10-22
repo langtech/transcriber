@@ -18,8 +18,8 @@ goog.require('ldc.event.Event');
  * @param {Number} rid Row ID of the row having the changes.
  * @param {Object} update Key-value pairs.
  */
-ldc.datamodel.TableUpdateRowEvent = function(source, rid, update) {
-	goog.base(this, source, {rid:rid, data:update});
+ldc.datamodel.TableUpdateRowEvent = function(source, table, rid, update) {
+	goog.base(this, source, {table:table, rid:rid, data:update});
 }
 goog.inherits(ldc.datamodel.TableUpdateRowEvent, ldc.event.Event);
 
@@ -35,8 +35,8 @@ ldc.datamodel.TableUpdateRowEvent.type = ldc.event.Event.newTypeId();
  * @param {Number} rid Row ID of the added row.
  * @param {Object} data Key-value pairs.
  */
-ldc.datamodel.TableAddRowEvent = function(source, rid, data) {
-	goog.base(this, source, {rid:rid, data:data});
+ldc.datamodel.TableAddRowEvent = function(source, table, rid, data) {
+	goog.base(this, source, {table:table, rid:rid, data:data});
 }
 goog.inherits(ldc.datamodel.TableAddRowEvent, ldc.event.Event);
 ldc.datamodel.TableAddRowEvent.type = ldc.event.Event.newTypeId();
@@ -61,8 +61,8 @@ ldc.datamodel.TableAddRowEvent.type = ldc.event.Event.newTypeId();
  * @param {Object} source Object that is the source of the event.
  * @param {Number} rid Row ID of the deleted row.
  */
-ldc.datamodel.TableDeleteRowEvent = function(source, rid) {
-	goog.base(this, source, {rid:rid});
+ldc.datamodel.TableDeleteRowEvent = function(source, table, rid) {
+	goog.base(this, source, {table:table, rid:rid});
 }
 goog.inherits(ldc.datamodel.TableDeleteRowEvent, ldc.event.Event);
 
