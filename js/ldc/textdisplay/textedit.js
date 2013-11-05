@@ -8,9 +8,9 @@
 goog.provide('ldc.textdisplay.TextEdit');
 goog.require('ldc.datamodel.TableRow');
 goog.require('ldc.event.Event');
+goog.require('ldc.waveform.WaveformSelectEvent');
 goog.require('goog.dom');
 goog.require('goog.events');
-goog.require('goog.structs.AvlTree');
 
 /**
  * Displays Table object as a set of segmeng widgets. TextEdit requires the
@@ -52,7 +52,7 @@ ldc.textdisplay.TextEdit = function(id, segWidget, eventBus, segFilter) {
 	segWidget.installEventListener(this.container, function(e) {
 		if (that.table) {
 			if (e.eventType == segWidget.EventType.CHANGE) {
-				var ev = new ldc.datamodel.TableUpdateRowEvent(that, that.table, e.rid, e.data);
+				var ev = new ldc.datamodel.TableUpdateRowEvent(that, e.rid, e.data);
 				eventBus.queue(ev);
 			}
 			else if (e.eventType == segWidget.EventType.SELECT) {
@@ -76,6 +76,7 @@ ldc.textdisplay.TextEdit = function(id, segWidget, eventBus, segFilter) {
 		eventBus.connect(ldc.datamodel.TableUpdateRowEvent, this);
 		eventBus.connect(ldc.datamodel.TableAddRowEvent, this);
 		eventBus.connect(ldc.datamodel.TableDeleteRowEvent, this);
+		eventBus.connect(ldc.waveform.WaveformSelectEvent, this);
 	}
 }
 
@@ -150,6 +151,12 @@ ldc.textdisplay.TextEdit.prototype.handleEvent = function(event) {
 	}
 	else if (event instanceof ldc.datamodel.TableDeleteRowEvent) {
 		this.remove_seg_(event.args().rid);
+	}
+	else if (event instanceof ldc.waveform.WaveformSelectEvent) {
+		var seg = this.findSegment(event.args().rid);
+		if (seg) {
+			seg.focus();
+		}
 	}
 }
 

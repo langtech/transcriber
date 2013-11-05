@@ -63,7 +63,6 @@ function textwidget(el) {
  * @return {String}
  */
 ldc.textdisplay.SegmentEdit.prototype.text = function() {
-	console.log(this._dom.textContent);
 	return textwidget(this._dom).textContent;
 }
 

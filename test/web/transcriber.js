@@ -73,6 +73,7 @@ jQuery(function($) {
 		ebus,
 		is_transcript_segment
 	);
+	speaker_swimlanes.setWidth(WAVEFORM.width);
 
 	var aikuma = new ldc.aikuma.AikumaFolder;
 
@@ -152,10 +153,13 @@ jQuery(function($) {
 	});
 
 	$('#create-seg-btn').on('click', function() {
-		var data = {offset:sel_beg, length:sel_dur, waveform:sel_waveform};
 		var rid = ldc.datamodel.Table.getNewRid();
-		var e = new ldc.datamodel.TableAddRowEvent(main, rid, data);
-		ebus.queue(e);
+		ebus.queue(new ldc.datamodel.TableAddRowEvent(main, rid, {
+			offset: sel_beg,
+			length: sel_dur,
+			waveform: sel_waveform,
+			speaker: 'speaker'
+		}));
 	});
 
 	$('#remove-seg-btn').on('click', function() {
@@ -212,10 +216,11 @@ jQuery(function($) {
 			table_clear_transcript();
 			var wid = get_waveform_id();
 			for (var i=0, item; item = obj.data[i]; ++i) {
-				var u = [wid, item.offset, item.length, item.transcript, item.translation];
+				var u = [wid, item.offset, item.length, item.speaker, item.transcript, item.translation];
 				table.addRow(u);
 			}
 			textedit.setTable(table);
+			speaker_swimlanes.setTable(table);
 		})
 		.fail(function(e) {
 			if (e.stack)
@@ -626,6 +631,7 @@ jQuery(function($) {
 					(a[1] - a[0]) / 16000,
 					null,
 					null,
+					null,
 					swimlane.id,
 					a[2] / 16000,
 					(a[3] - a[2]) / 16000
@@ -876,12 +882,12 @@ jQuery(function($) {
 				return;
 			e.preventDefault();
 			var rid = ldc.datamodel.Table.getNewRid();
-			var e = new ldc.datamodel.TableAddRowEvent(main, rid, {
+			ebus.queue(new ldc.datamodel.TableAddRowEvent(main, rid, {
 				waveform: get_waveform_id(),
 				offset: sel_beg,
-				length: sel_dur
-			});
-			ebus.queue(e);
+				length: sel_dur,
+				speaker: 'speaker'
+			}));
 		}
 		else if (e.keyCode == 13) {  // return (split)
 			if (cur_pos == null) {
@@ -918,17 +924,23 @@ jQuery(function($) {
 			if (overlaps == 0) {
 				// There's no overlapping segments. Two new segments should be created.
 				// Find a span to split.
-				var row, rid, e;
+				var rid;
 
-				row = {offset: gap_beg, length: t - gap_beg, waveform: get_waveform_id()};
 				rid = ldc.datamodel.Table.getNewRid();
-				e = new ldc.datamodel.TableAddRowEvent(main, rid, row);
-				ebus.queue(e);
+				ebus.queue(new ldc.datamodel.TableAddRowEvent(main, rid, {
+					offset: gap_beg,
+					length: t - gap_beg,
+					waveform:get_waveform_id(),
+					speaker: 'speaker'
+				}));
 
-				row = {offset: t, length: gap_end - t, waveform: get_waveform_id()};
 				rid = ldc.datamodel.Table.getNewRid();
-				e = new ldc.datamodel.TableAddRowEvent(main, rid, row);
-				ebus.queue(e);
+				ebus.queue(new ldc.datamodel.TableAddRowEvent(main, rid, {
+					offset: t,
+					length: gap_end - t,
+					waveform: get_waveform_id(),
+					speaker: 'speaker'
+				}));
 			}
 			else if (row_to_split != null) {
 				var beg = row_to_split.value('offset');
@@ -937,10 +949,13 @@ jQuery(function($) {
 				var update = {length:new_length};
 				var e = new ldc.datamodel.TableUpdateRowEvent(main, row_to_split.rid(), update);
 				ebus.queue(e);
-				var new_row = {offset: t, length: end - t, waveform: get_waveform_id()};
 				var new_rid = ldc.datamodel.Table.getNewRid();
-				e = new ldc.datamodel.TableAddRowEvent(main, new_rid, new_row);
-				ebus.queue(e);
+				ebus.queue(new ldc.datamodel.TableAddRowEvent(main, new_rid, {
+					offset: t,
+					length: end - t,
+					waveform: get_waveform_id(),
+					speaker: 'speaker'
+				}));
 				select_segment(new_rid);
 			}
 		}
