@@ -30,3 +30,7 @@
 	height: 300px;
 	overflow-y: auto;
 }
+
+#speaker-swimlanes div {
+	height: 10px;
+}

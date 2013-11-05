@@ -65,5 +65,4 @@ ldc.datamodel.TableDeleteRowEvent = function(source, rid) {
 	goog.base(this, source, {rid:rid});
 }
 goog.inherits(ldc.datamodel.TableDeleteRowEvent, ldc.event.Event);
-
 ldc.datamodel.TableDeleteRowEvent.type = ldc.event.Event.newTypeId();

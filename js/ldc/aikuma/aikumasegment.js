@@ -75,7 +75,6 @@ function textwidget(el) {
  * @return {String}
  */
 ldc.aikuma.AikumaSegment.prototype.text = function() {
-	console.log(this._dom.textContent);
 	return textwidget(this._dom).textContent;
 }
 
@@ -89,6 +88,9 @@ ldc.aikuma.AikumaSegment.prototype.text = function() {
 ldc.aikuma.AikumaSegment.prototype.update = function(update) {
 	if (update.hasOwnProperty('transcript')) {
 		textwidget(this._dom).textContent = update.transcript;
+	}
+	if (update.hasOwnProperty('translation')) {
+		transwidget(this._dom).textContent = update.translation;
 	}
 }
 
@@ -133,16 +135,37 @@ ldc.aikuma.AikumaSegment.prototype.focus = function() {
  *   - data - object containg table column name and value pairs
  */
 ldc.aikuma.AikumaSegment.installEventListener = function(subject, listener) {
+	goog.events.listen(subject, 'focus', function(event) {
+		var root = ldc.aikuma.AikumaSegment.findDom(event.target, subject);
+		if (root) {
+			var doms = goog.dom.getElementsByClass(UI_TEXT_CLASS, root);
+			this.selected_transcript_ = doms[0].textContent;
+			this.selected_translation_ = doms[1].textContent;
+		}
+	}, true);
 	goog.events.listen(subject, 'blur', function(event) {
-		var dom = ldc.aikuma.AikumaSegment.findDom(event.target, subject);
-		if (dom) {
+		var root = ldc.aikuma.AikumaSegment.findDom(event.target, subject);
+		if (root) {
+			var doms = goog.dom.getElementsByClass(UI_TEXT_CLASS, root);
+			var transcript = doms[0].textContent;
+			var translation = doms[1].textContent;
+			var data = {};
+			var change = false;
+			if (transcript != this.selected_transcript_) {
+				data.transcript = transcript;
+				change = true;
+			}
+			if (translation != this.selected_translation_) {
+				data.translation = translation;
+				change = true;
+			}
+			if (!change)
+				return;
 			listener({
 				eventType: ldc.aikuma.AikumaSegment.EventType.CHANGE,
 				browserEvent: event,
-				rid: parse_html_id(dom.id),
-				data: {
-					transcript: textwidget(dom).textContent
-				}
+				rid: parse_html_id(root.id),
+				data: data
 			});
 		}
 	}, true);
