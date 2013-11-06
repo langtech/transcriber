@@ -23,6 +23,9 @@ ldc.datamodel.Table = function(header, eventBus) {
 	this.header_ = header;
 	this.rows = {};
 
+	this.handlers = {'add':[], 'delete':[], 'update':[]};
+	this.thisobjs = {'add':[], 'delete':[], 'update':[]};
+
 	if (eventBus) {
 		eventBus.connect(ldc.datamodel.TableUpdateRowEvent, this);
 		eventBus.connect(ldc.datamodel.TableAddRowEvent, this);
@@ -72,10 +75,21 @@ ldc.datamodel.Table.prototype.addRow = function(row, rid) {
 		// TODO: make sure that the value is either a string or a number
 		newrow.push(v);
 	}
-	if (rid == null) {
+	if (rid == null)
 		rid = ldc.datamodel.Table.getNewRid();
-	}
 	this.rows[rid] = newrow;
+
+	// invoke "add" handlers
+	for (var i=0; i < this.handlers['add'].length; ++i) {
+		var handler = this.handlers['add'][i];
+		var thisobj = this.thisobjs['add'][i];
+		var row = new ldc.datamodel.TableRow(this, rid);
+		if (thisobj == null)
+			handler(rid, row);
+		else
+			handler.call(thisobj, rid, row);
+	}
+
 	return rid;
 }
 
@@ -89,6 +103,16 @@ ldc.datamodel.Table.prototype.deleteRow = function(rid) {
 	if (this.rows.hasOwnProperty(rid)) {
 		rid_pool.push(rid);
 		delete this.rows[rid];
+
+		// invoke "delete" handlers
+		for (var i=0; i < this.handlers['delete'].length; ++i) {
+			var handler = this.handlers['delete'][i];
+			var thisobj = this.thisobjs['delete'][i];
+			if (thisobj == null)
+				handler(rid);
+			else
+				handler.call(thisobj, rid);
+		}
 	}
 }
 
@@ -191,15 +215,30 @@ ldc.datamodel.Table.prototype.getCell = function(rid, field) {
 ldc.datamodel.Table.prototype.updateRow = function(rid, update) {
 	var row = this.rows[rid];
 	if (row != null) {
+		var old_values = {};
+		var new_values = {};
 		for (var i=0; i < this.header_.length; ++i) {
 			var k = this.header_[i];
 			if (update.hasOwnProperty(k)) {
+				old_values[k] = row[i];
+				new_values[k] = update[k];
 				if (is_hash(row[i]) && is_hash(update[k])) {
 					update_object(row[i], update[k]);
 				}
 				else {
 					row[i] = update[k];
 				}
+			}
+		}
+		if (Object.keys(old_values).length > 0) {
+			// invoke "update" handlers
+			for (var i=0; i < this.handlers['update'].length; ++i) {
+				var handler = this.handlers['update'][i];
+				var thisobj = this.thisobjs['update'][i];
+				if (thisobj == null)
+					handler(rid, old_values, new_values);
+				else
+					handler.call(thisobj, rid, old_values, new_values);
 			}
 		}
 	}
@@ -257,5 +296,57 @@ ldc.datamodel.Table.prototype.handleEvent = function(event) {
 	}
 }
 
+
+/**
+ * Register callback for an event.
+ *
+ * @method addListener
+ * @param {String} event One of 'add', 'delete', and 'update'.
+ * @param {Function} callback
+ * @param {Object} [thisObj]
+ */
+ ldc.datamodel.Table.prototype.addListener = function(event, callback, thisObj) {
+ 	// check if event type is recognized
+ 	if (event != 'add' && event != 'delete' && event != 'update')
+ 		return false;
+
+ 	// check if handler already exists
+ 	var i = this.handlers[event].indexOf(callback);
+ 	var j = this.thisobjs[event].indexOf(thisObj);
+ 	if (i >= 0 && j >= 0)
+ 		return false;
+
+ 	// add handler
+ 	this.handlers[event].push(callback);
+ 	this.thisobjs[event].push(callback);
+ 	return true;
+ }
+
+/**
+ * Unregister event callback.
+ *
+ * @method removeListener
+ * @param {String} event One of 'add', 'delete', and 'update'.
+ *    callback will be removed from all event types.
+ * @param {Function} callback
+ * @param {Object} [thisObj]
+ */
+ldc.datamodel.Table.prototype.removeListener = function(event, callback, thisObj) {
+	// make sure the event type is recognized
+	if (event != 'add' && event != 'delete' && event != 'update')
+		return false;
+
+ 	// check if handler exists
+ 	var i = this.handlers[event].indexOf(callback);
+ 	while (i >= 0 && thisObj != this.thisobjs[event][i])
+ 		i = this.handlers[event].indexOf(callback, i + 1);
+ 	if (i < 0)
+ 		return false;
+
+ 	// remove handler
+ 	this.handlers[event].splice(i, 1);
+ 	this.thisobjs[event].splice(i, 1);
+ 	return true;
+}
 
 })();
