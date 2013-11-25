@@ -11,17 +11,18 @@ goog.require('goog.dom');
 var UI_CLASS = 'segmentedit';
 var UI_TEXT_CLASS = 'segmentedit-textwidget';
 /**
- * A widget displaying a Segment object. SegmentEdit modifies data model.
- * The following fields are modified by SegmentEdit.
- *
- * - transcript
- *
- * @class SegmentEdit
- * @constructor
- * @param {Number} rid Rid of the corresponding TableRow object.
- * @param {Object} data An object with transcript property which contains
- *    the transcription text.
- */
+A widget displaying a piece of text which user can edit. It is intended to
+be used by {{#crossLink "textdisplay.TextEdit"}}{{/crossLink}}, which is
+basically a vertical container of {{#crossLink "textdisplay.SegmentEdit"}}
+{{/crossLink}}s.
+
+@class SegmentEdit
+@constructor
+@param {Number} rid Rid of the corresponding table row. This is used
+@param {Object} data An object with a `transcript` property. The value of
+  this gets displayed on the widget. User can modify the displayed text, which
+  is then propagated back to the property.
+*/
 ldc.textdisplay.SegmentEdit = function(rid, data) {
 	this.ui_style = {
 		text_bg_color: '#EEEEFF',
@@ -121,7 +122,7 @@ ldc.textdisplay.SegmentEdit.prototype.focus = function() {
  */
 ldc.textdisplay.SegmentEdit.installEventListener = function(subject, listener) {
 	goog.events.listen(subject, 'blur', function(event) {
-		var dom = ldc.textdisplay.SegmentEdit.findDom(event.target, subject);
+		var dom = find_dom(event.target, subject);
 		if (dom) {
 			listener({
 				eventType: ldc.textdisplay.SegmentEdit.EventType.CHANGE,
@@ -134,7 +135,7 @@ ldc.textdisplay.SegmentEdit.installEventListener = function(subject, listener) {
 		}
 	}, true);
 	goog.events.listen(subject, 'click', function(event) {
-		var dom = ldc.textdisplay.SegmentEdit.findDom(event.target, subject);
+		var dom = find_dom(event.target, subject);
 		if (dom) {
 			listener({
 				eventType: ldc.textdisplay.SegmentEdit.EventType.SELECT,
@@ -179,9 +180,9 @@ function parse_html_id(s) {
 
 // Find an html element corresponding to a SegmentEdit object.
 // Walk the ancestry path starting from origin. If root is not part of the
-// path, the search continues until it meets the document root if root.
+// path, the search continues until it meets the document root.
 // Returns the dom object if search succeeds, or null, otherwise.
-ldc.textdisplay.SegmentEdit.findDom = function(origin, root) {
+function find_dom(origin, root) {
 	var dom = goog.dom.getAncestor(origin, function(node) {
 		if (node == root) {
 			return true;

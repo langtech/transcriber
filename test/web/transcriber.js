@@ -66,14 +66,145 @@ jQuery(function($) {
 	);
 
 	var waveforms = {};
-	var swimlanes = [];
 
-	var speaker_swimlanes = new ldc.aikuma.SpeakerSwimLanes(
-		document.getElementById('speaker-swimlanes'),
-		ebus,
-		is_transcript_segment
-	);
-	speaker_swimlanes.setWidth(WAVEFORM.width);
+	// swimlanes is for swimlanes of annotation (commentary) segments
+	var swimlanes = {
+		list: [],
+
+		init: function() {
+			var that = this;
+
+			// handle WaveformWindowEvent
+			this.wwe_handler = {
+				handleEvent: function(e) {
+					that.list.forEach(function(sl) {
+						sl.display(e.args().beg, e.args().dur);
+					});
+				}
+			};
+
+			ebus.connect(ldc.waveform.WaveformWindowEvent, this.wwe_handler);
+		},
+
+		tear_down: function() {
+			this.list.forEach(function(sl) {sl.tearDown()});
+			this.list = [];
+			ebus.disconnect(ldc.waveform.WaveformWindowEvent, this.wwe_handler);
+		},
+
+		select_segment: function(param) {
+			jplayer(sel_sl).jPlayer('stop');
+			$('#play-rspk-btn').button('reset');
+			map_beg = param.mapoff;
+			map_dur = param.maplen;
+			sel_sl = param.swimlane_id;
+			this.list.forEach(function(sl) {
+				if (sl.id != sel_sl)
+					sl.clearSelection();
+			});
+			ebus.queue(new ldc.waveform.WaveformRegionEvent(main, param.offset, param.length));
+		},
+
+		add: function(map) {
+			var $picture = $('<div class="swimlane"></div>').appendTo($('#pictures'));
+			var $container = $('<div class="swimlane"></div>').appendTo($('#swimlane-containers'));
+			var $swimlane = $('<div/>').appendTo($container);
+			var swimlane = new ldc.aikuma.SwimLane($swimlane[0], WAVEFORM.width, table);
+			$swimlane.attr('id', 'swimlane-' + swimlane.id);
+			$picture.attr('id', 'picture-' + swimlane.id);
+
+			map.split(/\s+/).forEach(function(line) {
+				var a = line.split(/[,:]/)
+					.map(function(x){return parseInt(x)});
+				if (a.length == 4) {
+					table.addRow([
+						null,
+						a[0] / 16000,
+						(a[1] - a[0]) / 16000,
+						null,
+						null,
+						null,
+						swimlane.id,
+						a[2] / 16000,
+						(a[3] - a[2]) / 16000
+					]);
+				}
+			});
+
+			swimlane.setTable(table);
+			swimlane.display(WAVEFORM.beg, WAVEFORM.dur);
+
+			this.list.push(swimlane);
+			swimlane.segmentSelected.connect(this, 'select_segment');
+
+			return swimlane;
+		}
+	};
+	swimlanes.init();
+
+	// swimlane_stack is for the transcription segments
+	var swimlane_stack = {
+		widget: new ldc.aikuma.SwimLaneStack(
+			document.getElementById('speaker-swimlanes'),
+			table,
+			is_transcript_segment
+		),
+
+		init: function(w, beg, dur) {
+			var that = this;
+
+			// handle WaveformWindowEvent
+			this.wwe_handler = {
+				handleEvent: function(e) {
+					that.widget.display(e.args().beg, e.args().dur);
+				}
+			};
+
+			// handle WaveformSelectEvent
+			this.wse_handler = {
+				handleEvent: function(e) {
+					var spkr = table.getCell(e.args().rid, 'speaker');
+					var sl = that.widget.getSwimLaneForSpeaker(spkr);
+					sl.selectSegment(e.args().rid);
+				}
+			};
+
+			this.widget.setWidth(w);
+			this.widget.display(beg, dur);
+			table.rowAdded.connect(this.widget, 'handleRowAdded');
+			table.rowUpdated.connect(this.widget, 'handleRowUpdated');
+			this.widget.segmentSelected.connect(this, 'select_segment');
+			ebus.connect(ldc.waveform.WaveformWindowEvent, this.wwe_handler);
+			ebus.connect(ldc.waveform.WaveformSelectEvent, this.wse_handler);
+		},
+
+		tear_down: function() {
+			this.widget.tearDown();
+			ebus.disconnect(ldc.waveform.WaveformWindowEvent, this.wwe_handler);
+			ebus.disconnect(ldc.waveform.WaveformSelectEvent, this.wse_handler);
+			table.rowAdded.disconnect(this.widget);
+			table.rowUpdated.disconnect(this.widget);
+		},
+
+		select_segment: function(param) {
+			sel_beg = param.offset;
+			sel_dur = param.length;
+			sel_rid = param.rid;
+			sel_waveform = get_waveform_id();
+			$('#sel-beg').text(Math.round(sel_beg * 10000) / 10000);
+			$('#sel-dur').text(Math.round(sel_dur * 10000) / 10000);
+			$('#create-seg-btn').prop('disabled', true);
+			$('#remove-seg-btn').prop('disabled', false);
+
+			var rwf = get_waveform();  // rich waveform
+			var reg = rwf.getSelection();
+			rwf.updateRegion(reg.id, sel_beg, sel_dur, rwf.selection_color_dark);
+			rwf.linkRegion(reg.id, sel_rid);
+
+			textedit.findSegment(sel_rid).focus();
+		}
+	};
+	swimlane_stack.init(WAVEFORM.width, WAVEFORM.beg, WAVEFORM.dur);
 
 	var aikuma = new ldc.aikuma.AikumaFolder;
 
@@ -220,7 +351,6 @@ jQuery(function($) {
 				table.addRow(u);
 			}
 			textedit.setTable(table);
-			speaker_swimlanes.setTable(table);
 		})
 		.fail(function(e) {
 			if (e.stack)
@@ -370,7 +500,6 @@ jQuery(function($) {
 	}
 
 	textedit.setTable(table);
-	speaker_swimlanes.setTable(table);
 
 
 	/**
@@ -420,14 +549,6 @@ jQuery(function($) {
 		segs.forEach(function(rid) {
 			table.deleteRow(rid);
 		});
-	}
-
-
-	function tear_down_swimlanes() {
-		for (var i=0, sl; sl = swimlanes[i]; ++i) {
-			sl.tearDown();
-		}
-		swimlanes = [];
 	}
 
 
@@ -534,7 +655,7 @@ jQuery(function($) {
 
 		var make_cb = function(respeaking) {
 			return function() {
-				var sl = add_swimlane(this.result);
+				var sl = swimlanes.add(this.result);
 				var image_file = aikuma.users[respeaking['json']['creator_uuid']]['small.jpg'];
 				var image_url = URL.createObjectURL(image_file);
 				var audio_url = URL.createObjectURL(respeaking['wav']);
@@ -543,8 +664,9 @@ jQuery(function($) {
 			};
 		}
 
-		tear_down_swimlanes();
+		swimlanes.tear_down();
 		table_clear_swimlane();
+		swimlanes.init();
 		for (var i=0, item; item = aikuma.recordings[grp.respeakings[i]]; ++i) {
 			if (item.json && item['wav']) {
 				var reader = new FileReader;
@@ -610,40 +732,6 @@ jQuery(function($) {
 				}
 			}
 		});
-	}
-
-
-	function add_swimlane(map) {
-		var $picture = $('<div class="swimlane"></div>').appendTo($('#pictures'));
-		var $container = $('<div class="swimlane"></div>').appendTo($('#swimlane-containers'));
-		var $swimlane = $('<div/>').appendTo($container);
-		var swimlane = new ldc.aikuma.SwimLane($swimlane[0], WAVEFORM.width, ebus);
-		$swimlane.attr('id', 'swimlane-' + swimlane.id);
-		$picture.attr('id', 'picture-' + swimlane.id);
-
-		map.split(/\s+/).forEach(function(line) {
-			var a = line.split(/[,:]/)
-				.map(function(x){return parseInt(x)});
-			if (a.length == 4) {
-				table.addRow([
-					null,
-					a[0] / 16000,
-					(a[1] - a[0]) / 16000,
-					null,
-					null,
-					null,
-					swimlane.id,
-					a[2] / 16000,
-					(a[3] - a[2]) / 16000
-				]);
-			}
-		});
-
-		swimlane.setTable(table);
-		swimlane.display(WAVEFORM.beg, WAVEFORM.dur);
-
-		swimlanes.push(swimlane);
-		return swimlane;
 	}
 
 
@@ -814,7 +902,7 @@ jQuery(function($) {
 		o.respeakings.forEach(function(uuid, i) {
 			download(AIKUMA_BASE + '/recordings/' + uuid + '.map')
 			.then(function(map) {
-				var sl = add_swimlane(map);
+				var sl = swimlanes.add(map);
 				add_respeaking_audio(AIKUMA_BASE + '/recordings/' + uuid + '.ogg', 'oga', sl.id);
 				add_user_image_from_web(uuid, sl.id);
 			})
