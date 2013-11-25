@@ -70,10 +70,11 @@ jQuery(function($) {
 
 	var speaker_swimlanes = new ldc.aikuma.SpeakerSwimLanes(
 		document.getElementById('speaker-swimlanes'),
-		ebus,
+		table,
 		is_transcript_segment
 	);
 	speaker_swimlanes.setWidth(WAVEFORM.width);
+	table.rowAdded.connect(speaker_swimlanes, 'handleRowAdded');
 
 	var aikuma = new ldc.aikuma.AikumaFolder;
 
@@ -220,7 +221,6 @@ jQuery(function($) {
 				table.addRow(u);
 			}
 			textedit.setTable(table);
-			speaker_swimlanes.setTable(table);
 		})
 		.fail(function(e) {
 			if (e.stack)
@@ -370,7 +370,6 @@ jQuery(function($) {
 	}
 
 	textedit.setTable(table);
-	speaker_swimlanes.setTable(table);
 
 
 	/**
@@ -617,7 +616,7 @@ jQuery(function($) {
 		var $picture = $('<div class="swimlane"></div>').appendTo($('#pictures'));
 		var $container = $('<div class="swimlane"></div>').appendTo($('#swimlane-containers'));
 		var $swimlane = $('<div/>').appendTo($container);
-		var swimlane = new ldc.aikuma.SwimLane($swimlane[0], WAVEFORM.width, ebus);
+		var swimlane = new ldc.aikuma.SwimLane($swimlane[0], WAVEFORM.width, table);
 		$swimlane.attr('id', 'swimlane-' + swimlane.id);
 		$picture.attr('id', 'picture-' + swimlane.id);
 

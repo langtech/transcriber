@@ -933,11 +933,12 @@ goog.addDependency('../../../ldc/aikuma/speakerswimlanes.js', ['ldc.aikuma.Speak
 goog.addDependency('../../../ldc/aikuma/swimlane.js', ['ldc.aikuma.SwimLane'], ['goog.dom', 'goog.events', 'ldc.aikuma.SwimLaneRegionEvent', 'ldc.datamodel.TableAddRowEvent', 'ldc.datamodel.TableDeleteRowEvent', 'ldc.datamodel.TableUpdateRowEvent', 'ldc.waveform.WaveformWindowEvent']);
 goog.addDependency('../../../ldc/datamodel/events.js', ['ldc.datamodel.TableAddRowEvent', 'ldc.datamodel.TableDeleteRowEvent', 'ldc.datamodel.TableUpdateRowEvent'], ['ldc.event.Event']);
 goog.addDependency('../../../ldc/datamodel/index.js', ['ldc.datamodel'], ['ldc.datamodel.Table', 'ldc.datamodel.TableAddRowEvent', 'ldc.datamodel.TableDeleteRowEvent', 'ldc.datamodel.TableRow', 'ldc.datamodel.TableUpdateRowEvent']);
-goog.addDependency('../../../ldc/datamodel/table.js', ['ldc.datamodel.Table'], ['ldc.datamodel.TableUpdateRowEvent']);
+goog.addDependency('../../../ldc/datamodel/table.js', ['ldc.datamodel.Table'], ['ldc.datamodel.TableUpdateRowEvent', 'ldc.event.Signal']);
 goog.addDependency('../../../ldc/datamodel/tablerow.js', ['ldc.datamodel.TableRow'], []);
 goog.addDependency('../../../ldc/event/eventbus.js', ['ldc.event.EventBus'], []);
 goog.addDependency('../../../ldc/event/events.js', ['ldc.event.Event', 'ldc.event.TextEvent'], []);
-goog.addDependency('../../../ldc/event/index.js', ['ldc.event'], ['ldc.event.Event', 'ldc.event.EventBus']);
+goog.addDependency('../../../ldc/event/index.js', ['ldc.event'], ['ldc.event.Event', 'ldc.event.EventBus', 'ldc.event.Signal']);
+goog.addDependency('../../../ldc/event/signal.js', ['ldc.event.Signal'], []);
 goog.addDependency('../../../ldc/index.js', ['ldc'], ['ldc.aikuma', 'ldc.datamodel', 'ldc.event', 'ldc.textdisplay', 'ldc.waveform']);
 goog.addDependency('../../../ldc/mediaplayer/audioplayer.js', ['ldc.mediaplayer.AudioPlayer'], []);
 goog.addDependency('../../../ldc/mediaplayer/index.js', ['ldc.mediaplayer'], ['ldc.mediaplayer.AudioPlayer']);

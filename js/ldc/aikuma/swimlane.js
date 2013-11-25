@@ -16,31 +16,38 @@ goog.require('goog.dom');
 goog.require('goog.events');
 
 /**
- * Display for Aikuma respeaking segments.
- *
- * The respeaking segments are passed along with other segments in the table.
- * A filter is used to select only relevant segments. Filter is a boolean
- * function taking an ldc.datamodel.Segment object.
- *
- * @class SwimLane
- * @constructor
- * @param {HTMLElement} div A div element to wrap to display the widget.
- * @param {Number} [width=100] Width of the widget.
- * @param {event.EventBus} [eventbus]
- * @param {Function} [filter] Boolean function taking an ldc.datamodel.Segment
- *   object. By default, the function is defined as follows:
- *
- *       seg.value('waveform') == this.id
- *
- */
-ldc.aikuma.SwimLane = function(div, width, eventbus, filter) {
+Display for Aikuma respeaking segments.
+
+The respeaking segments are passed along with other segments in the table.
+A filter is used to select only relevant segments. Filter is a boolean
+function taking an ldc.datamodel.TableRow object.
+
+@class SwimLane
+@constructor
+@param {HTMLElement} div A div element to wrap to display the widget.
+@param {Number} [width=100] Width of the widget.
+@param {datamodel.Table} table A datamodel.Table object with these fields:
+
+  - offset: start offset of the segment in second
+  - length: length of the segment in second
+  - mapoff: start offset of a region on a respeaking
+  - maplen: length of the respeaking region
+  - waveform: null or a numeric ID of the waveform on which the segment is on
+  - any other fields required by filter
+
+@param {Function} [filter] Boolean function taking an ldc.datamodel.TableRow
+  object. By default, the function is defined as follows:
+
+      row.value('swimlane') == this.id
+
+*/
+ldc.aikuma.SwimLane = function(div, width, table, filter) {
 	this.div = div;
 	var that = this;
 	this.filter = filter != null ? filter : function(seg) {
 		return seg.value('swimlane') == that.id;
 	};
 	this.width = width == null ? 100 : width;
-	this.ebus = eventbus;
 
 	this.segs = new Swimlane('anyone');
 
@@ -59,13 +66,21 @@ ldc.aikuma.SwimLane = function(div, width, eventbus, filter) {
 	this.selected = null;  // selected region
 
 	if (this.ebus) {
-		this.ebus.connect(ldc.datamodel.TableAddRowEvent, this);
-		this.ebus.connect(ldc.datamodel.TableDeleteRowEvent, this);
-		this.ebus.connect(ldc.datamodel.TableUpdateRowEvent, this);
 		this.ebus.connect(ldc.waveform.WaveformWindowEvent, this);
 		this.ebus.connect(ldc.waveform.WaveformSelectEvent, this);
 		this.ebus.connect(ldc.aikuma.SwimLaneRegionEvent, this);
 	}
+
+	/**
+	Signals that a segment has been selected.
+	@event segmentSelected
+	@param {number} rid
+	@param {number} offset
+	@param {number} length
+	*/
+	this.segmentSelected = new ldc.event.Signal;
+
+	this.setTable(table, filter);
 }
 
 var counter = 0;
@@ -142,15 +157,23 @@ ldc.aikuma.SwimLane.prototype.render_segment_ = function(beg, dur) {
 }
 
 /**
- * Set the data model and reset the display.
- *
- * @method setTable
- * @param {datamodel.Table} table A Table object for Aikuma application.
- *  The table should have 2 numeric columns: `offset` and `length`.
- *  Offset stores the start time of segments, and length is for their
- *  size. Both should be in seconds.
- */
-ldc.aikuma.SwimLane.prototype.setTable = function(table) {
+Set the data model and reset the display.
+@method setTable
+@param {datamodel.Table} table A Table object for Aikuma application.
+  The table should have 2 numeric columns: `offset` and `length`.
+  Offset stores the start time of segments, and length is for their
+  size. Both should be in seconds.
+@param {function} [filter] A boolean function taking a {{#crossLink
+  "datamodel.TableRow"}}{{/crossLink}} object.
+*/
+ldc.aikuma.SwimLane.prototype.setTable = function(table, filter) {
+	if (table == null)
+		return;
+	if (filter)
+		this.filter = filter;
+
+	this.table = table;
+
 	this.segs.clear();
 
 	var that = this;
@@ -163,6 +186,10 @@ ldc.aikuma.SwimLane.prototype.setTable = function(table) {
 	}, this.filter);
 
 	this.display(this.beg, this.dur);
+
+	this.table.rowAdded.connect(this, 'handleRowAdded');
+	this.table.rowDeleted.connect(this, 'handleRowDeleted');
+	this.table.rowUpdated.connect(this, 'handleRowUpdated');
 }
 
 /**
@@ -240,12 +267,82 @@ ldc.aikuma.SwimLane.prototype.handleEvent = function(e) {
 
 
 /**
+Slot handling {{#crossLink "datamodel.Table/rowAdded:event"}}{{/crossLink}}
+signal.
+@method handleRowAdded
+@param {object} param An object emitted by {{#crossLink
+  "datamodel.Table/rowAdded:event"}}{{/crossLink}} signal.
+*/
+ldc.aikuma.SwimLane.prototype.handleRowAdded = function(param) {
+	var table_row_emu = {
+		value: function(k) {return param.row[k]}
+	};
+	if (this.filter(table_row_emu)) {
+		if (this.segs.addSegment(param.rid, param.row.offset, param.row.length)) {
+			var div = this.render_segment_(param.row.offset, param.row.length);
+			if (div) {
+				div.rid = param.rid;
+				this.segs.getByRid(param.rid).div = div;
+			}
+		}
+	}
+}
+
+
+/**
+Slot handling {{#crossLink "datamodel.Table/rowDeleted:event"}}{{/crossLink}}
+signal.
+@method handleRowDeleted
+@param {object} param An object emitted by {{#crossLink
+  "datamodel.Table/rowDeleted:event"}}{{/crossLink}} signal.
+*/
+ldc.aikuma.SwimLane.prototype.handleRowDeleted = function(param) {
+	if (this.segs.removeSegmentByRid(param.rid))
+		this.display(this.beg, this.dur);
+}
+
+
+/**
+Slot handling {{#crossLink "datamodel.Table/rowUpdated:event"}}{{/crossLink}}
+signal.
+@method handleRowUpdated
+@param {object} param An object emitted by {{#crossLink
+  "datamodel.Table/rowUpdated:event"}}{{/crossLink}} signal.
+*/
+ldc.aikuma.SwimLane.prototype.handleRowUpdated = function(param) {
+	if (!param.newRow.hasOwnProperty('offset') &&
+		!param.newRow.hasOwnProperty('length'))
+		return;
+
+	var seg = this.segs.getByRid(param.rid);
+	if (seg == null)
+		return;
+
+	this.segs.removeSegmentByRid(param.rid);
+	if (param.newRow.offset)
+		seg.offset = param.newRow.offset;
+	if (param.newRow.length)
+		seg.length = param.newRow.length;
+	if (this.segs.addSegment(param.rid, seg.offset, seg.length, seg.user_data)) {
+		var div = this.render_segment_(seg.offset, seg.length)
+		if (div) {
+			div.dir = param.rid;
+			this.segs.getByRid(param.rid).div = div;
+		}
+	}
+}
+
+
+/**
  * Disconnect event handlers from event bus and browser window objects.
  * Call this method before removing the RichWaveform object.
  *
  * @method tearDown
  */
 ldc.aikuma.SwimLane.prototype.tearDown = function(e) {
+	this.table.rowAdded.disconnect(this);
+	this.table.rowDeleted.disconnect(this);
+	this.table.rowUpdated.disconnect(this);
 	if (this.ebus) {
 		this.ebus.disconnect(ldc.datamodel.TableAddRowEvent, this);
 		this.ebus.disconnect(ldc.datamodel.TableDeleteRowEvent, this);
@@ -280,6 +377,11 @@ ldc.aikuma.SwimLane.prototype.handle_ui_events_ = function(e) {
 			unselect_seg(this.selected);
 		}
 		select_seg(this.selected = e.target);
+		this.segmentSelected.emit({
+			rid: seg.rid(),
+			offset: seg.offset,
+			length: seg.length
+		});
 		if (this.ebus != null) {
 			this.ebus.queue(new ldc.aikuma.SwimLaneRegionEvent(this, this.id, {
 				offset: seg.offset,
