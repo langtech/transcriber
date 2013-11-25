@@ -65,18 +65,15 @@ ldc.aikuma.SwimLane = function(div, width, table, filter) {
 	this.dur = 0;
 	this.selected = null;  // selected region
 
-	if (this.ebus) {
-		this.ebus.connect(ldc.waveform.WaveformWindowEvent, this);
-		this.ebus.connect(ldc.waveform.WaveformSelectEvent, this);
-		this.ebus.connect(ldc.aikuma.SwimLaneRegionEvent, this);
-	}
-
 	/**
 	Signals that a segment has been selected.
 	@event segmentSelected
 	@param {number} rid
-	@param {number} offset
+	@param {number} offset Offset into the main signal
 	@param {number} length
+	@param {number} swimlane_id
+	@param {number} mapoff Offset into the commentary signal
+	@param {number} maplen
 	*/
 	this.segmentSelected = new ldc.event.Signal;
 
@@ -343,15 +340,16 @@ ldc.aikuma.SwimLane.prototype.tearDown = function(e) {
 	this.table.rowAdded.disconnect(this);
 	this.table.rowDeleted.disconnect(this);
 	this.table.rowUpdated.disconnect(this);
-	if (this.ebus) {
-		this.ebus.disconnect(ldc.datamodel.TableAddRowEvent, this);
-		this.ebus.disconnect(ldc.datamodel.TableDeleteRowEvent, this);
-		this.ebus.disconnect(ldc.datamodel.TableUpdateRowEvent, this);
-		this.ebus.disconnect(ldc.waveform.WaveformWindowEvent, this);
-		this.ebus.disconnect(ldc.waveform.WaveformSelectEvent, this);
-		this.ebus.disconnect(ldc.aikuma.SwimLaneRegionEvent, this);
-	}
 	goog.events.unlisten(this.div, 'click', this.handle_ui_events_);
+}
+
+/**
+Unselect selected segment.
+@method clearSelection
+*/
+ldc.aikuma.SwimLane.prototype.clearSelection = function() {
+	if (this.selected)
+		unselect_seg(this.selected);
 }
 
 
@@ -378,9 +376,12 @@ ldc.aikuma.SwimLane.prototype.handle_ui_events_ = function(e) {
 		}
 		select_seg(this.selected = e.target);
 		this.segmentSelected.emit({
-			rid: seg.rid(),
+			rid: seg.rid,
 			offset: seg.offset,
-			length: seg.length
+			length: seg.length,
+			swimlane_id: this.id,
+			mapoff: mapoff,
+			maplen: maplen
 		});
 		if (this.ebus != null) {
 			this.ebus.queue(new ldc.aikuma.SwimLaneRegionEvent(this, this.id, {

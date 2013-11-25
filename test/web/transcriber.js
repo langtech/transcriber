@@ -66,15 +66,72 @@ jQuery(function($) {
 	);
 
 	var waveforms = {};
-	var swimlanes = [];
 
-	var speaker_swimlanes = new ldc.aikuma.SpeakerSwimLanes(
+	// swimlanes is for swimlanes of annotation (commentary) segments
+	var swimlanes = {
+		list: [],
+
+		select_segment: function(param) {
+			jplayer(sel_sl).jPlayer('stop');
+			$('#play-rspk-btn').button('reset');
+			map_beg = param.mapoff;
+			map_dur = param.maplen;
+			sel_sl = param.swimlane_id;
+			this.list.forEach(function(sl) {
+				if (sl.id != sel_sl)
+					sl.clearSelection();
+			});
+		},
+
+		tear_down: function() {
+			this.list.forEach(function(sl) {sl.tearDown()});
+			this.list = [];
+		},
+
+		add: function(map) {
+			var $picture = $('<div class="swimlane"></div>').appendTo($('#pictures'));
+			var $container = $('<div class="swimlane"></div>').appendTo($('#swimlane-containers'));
+			var $swimlane = $('<div/>').appendTo($container);
+			var swimlane = new ldc.aikuma.SwimLane($swimlane[0], WAVEFORM.width, table);
+			$swimlane.attr('id', 'swimlane-' + swimlane.id);
+			$picture.attr('id', 'picture-' + swimlane.id);
+
+			map.split(/\s+/).forEach(function(line) {
+				var a = line.split(/[,:]/)
+					.map(function(x){return parseInt(x)});
+				if (a.length == 4) {
+					table.addRow([
+						null,
+						a[0] / 16000,
+						(a[1] - a[0]) / 16000,
+						null,
+						null,
+						null,
+						swimlane.id,
+						a[2] / 16000,
+						(a[3] - a[2]) / 16000
+					]);
+				}
+			});
+
+			swimlane.setTable(table);
+			swimlane.display(WAVEFORM.beg, WAVEFORM.dur);
+
+			this.list.push(swimlane);
+			swimlane.segmentSelected.connect(this, 'select_segment');
+
+			return swimlane;
+		}
+	};
+
+	// swimlane_stack is for the transcription segments
+	var swimlane_stack = new ldc.aikuma.SwimLaneStack(
 		document.getElementById('speaker-swimlanes'),
 		table,
 		is_transcript_segment
 	);
-	speaker_swimlanes.setWidth(WAVEFORM.width);
-	table.rowAdded.connect(speaker_swimlanes, 'handleRowAdded');
+	swimlane_stack.setWidth(WAVEFORM.width);
+	table.rowAdded.connect(swimlane_stack, 'handleRowAdded');
 
 	var aikuma = new ldc.aikuma.AikumaFolder;
 
@@ -422,14 +479,6 @@ jQuery(function($) {
 	}
 
 
-	function tear_down_swimlanes() {
-		for (var i=0, sl; sl = swimlanes[i]; ++i) {
-			sl.tearDown();
-		}
-		swimlanes = [];
-	}
-
-
 	/**
 	 * Read PCM samples from the audio file.
 	 *
@@ -533,7 +582,7 @@ jQuery(function($) {
 
 		var make_cb = function(respeaking) {
 			return function() {
-				var sl = add_swimlane(this.result);
+				var sl = swimlanes.add(this.result);
 				var image_file = aikuma.users[respeaking['json']['creator_uuid']]['small.jpg'];
 				var image_url = URL.createObjectURL(image_file);
 				var audio_url = URL.createObjectURL(respeaking['wav']);
@@ -542,7 +591,7 @@ jQuery(function($) {
 			};
 		}
 
-		tear_down_swimlanes();
+		swimlanes.tear_down();
 		table_clear_swimlane();
 		for (var i=0, item; item = aikuma.recordings[grp.respeakings[i]]; ++i) {
 			if (item.json && item['wav']) {
@@ -609,40 +658,6 @@ jQuery(function($) {
 				}
 			}
 		});
-	}
-
-
-	function add_swimlane(map) {
-		var $picture = $('<div class="swimlane"></div>').appendTo($('#pictures'));
-		var $container = $('<div class="swimlane"></div>').appendTo($('#swimlane-containers'));
-		var $swimlane = $('<div/>').appendTo($container);
-		var swimlane = new ldc.aikuma.SwimLane($swimlane[0], WAVEFORM.width, table);
-		$swimlane.attr('id', 'swimlane-' + swimlane.id);
-		$picture.attr('id', 'picture-' + swimlane.id);
-
-		map.split(/\s+/).forEach(function(line) {
-			var a = line.split(/[,:]/)
-				.map(function(x){return parseInt(x)});
-			if (a.length == 4) {
-				table.addRow([
-					null,
-					a[0] / 16000,
-					(a[1] - a[0]) / 16000,
-					null,
-					null,
-					null,
-					swimlane.id,
-					a[2] / 16000,
-					(a[3] - a[2]) / 16000
-				]);
-			}
-		});
-
-		swimlane.setTable(table);
-		swimlane.display(WAVEFORM.beg, WAVEFORM.dur);
-
-		swimlanes.push(swimlane);
-		return swimlane;
 	}
 
 
@@ -813,7 +828,7 @@ jQuery(function($) {
 		o.respeakings.forEach(function(uuid, i) {
 			download(AIKUMA_BASE + '/recordings/' + uuid + '.map')
 			.then(function(map) {
-				var sl = add_swimlane(map);
+				var sl = swimlanes.add(map);
 				add_respeaking_audio(AIKUMA_BASE + '/recordings/' + uuid + '.ogg', 'oga', sl.id);
 				add_user_image_from_web(uuid, sl.id);
 			})

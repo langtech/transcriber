@@ -97,7 +97,7 @@ ldc.datamodel.Table.prototype.addRow = function(row, rid) {
 		// TODO: make sure that the value is either a string or a number
 		newrow.push(v);
 	}
-	if (rid == null) {
+	if (rid == null)
 		rid = ldc.datamodel.Table.getNewRid();
 	this.rows[rid] = newrow;
 
