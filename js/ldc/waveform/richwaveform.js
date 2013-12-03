@@ -81,15 +81,23 @@ ldc.waveform.RichWaveform = function(buffer, canvas, channel, ebus) {
 	this.cursor_id = this.addRegion(0, 0);
 	this.selection_id = this.addRegion(0, 0, null, 0); // initially hidden
 
-	// There are two classes of selections: primary and secondary. If the
-	// user action on selection originates from this waveform, the selection
-	// is primary. The selection is secondary otherwise. Usually, primary
-	// selection has more intense color, and secondary is rendered with a
-	// lighter color.
-	this.selection_color = {
-		'primary': 'rgba(255,0,0,0.4)',
-		'secondary': 'rgba(255,0,0,0.05)'
-	};
+	/**
+	Color used for selected region in the _primary_ waveform. For a selected
+	region, a waveform is primary if the region is on the waveform.
+
+	@property selection_color_dark
+	@type String
+	*/
+	this.selection_color_dark = 'rgba(255,0,0,0.4)';
+
+	/**
+	Color used for selected region in the _secondary_ waveform. For a selected
+	region, a waveform is secondary if the region is NOT on the waveform.
+
+	@property selection_color_light
+	@type String
+	*/
+	this.selection_color_light = 'rgba(255,0,0,0.05)';
 
 	// listen on waveform events
 	this.ebus = ebus;
@@ -370,9 +378,9 @@ ldc.waveform.RichWaveform.prototype.render_region_ = function(r) {
  * @param {Number} dur 
  */
  ldc.waveform.RichWaveform.prototype.update_selection_ = function(klass, beg, dur) {
-		var color = this.selection_color[klass];
-		this.updateRegion(this.selection_id, beg, dur, color);
-	};
+ 	var color = klass == 'primary' ? this.selection_color_dark : this.selection_color_light;
+	this.updateRegion(this.selection_id, beg, dur, color);
+};
 
 /**
  * Set up mouse events for updating cursor and selection.

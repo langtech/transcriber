@@ -6,6 +6,7 @@
  * @namespace datamodel
  */
 goog.provide('ldc.datamodel.Table');
+goog.require('ldc.event.Signal');
 goog.require('ldc.datamodel.TableUpdateRowEvent');
 
 /**
@@ -23,11 +24,38 @@ ldc.datamodel.Table = function(header, eventBus) {
 	this.header_ = header;
 	this.rows = {};
 
+	this.handlers = {'add':[], 'delete':[], 'update':[]};
+	this.thisobjs = {'add':[], 'delete':[], 'update':[]};
+
 	if (eventBus) {
 		eventBus.connect(ldc.datamodel.TableUpdateRowEvent, this);
 		eventBus.connect(ldc.datamodel.TableAddRowEvent, this);
 		eventBus.connect(ldc.datamodel.TableDeleteRowEvent, this);
 	}
+
+	/**
+	Signals that a new row has been added to the table.
+	@event rowAdded
+	@param {number} rid Row ID of the added row.
+	@param {object} row Object representation of the added row.
+	*/
+	this.rowAdded = new ldc.event.Signal;
+
+	/**
+	Sianals that a row has been deleted from the table.
+	@event rowDeleted
+	@param {number} rid Row ID of the deleted row.
+	*/
+	this.rowDeleted = new ldc.event.Signal;
+
+	/**
+	Signals that a row has been updated.
+	@event rowUpdated
+	@param {number} rid Row ID of the updated row.
+	@param {object} oldRow Object containing the old values of the row.
+	@param {object} newRow Object containing the updated values of the row.
+	*/
+	this.rowUpdated = new ldc.event.Signal;
 }
 
 /**
@@ -72,10 +100,16 @@ ldc.datamodel.Table.prototype.addRow = function(row, rid) {
 		// TODO: make sure that the value is either a string or a number
 		newrow.push(v);
 	}
-	if (rid == null) {
+	if (rid == null)
 		rid = ldc.datamodel.Table.getNewRid();
-	}
 	this.rows[rid] = newrow;
+
+	// emit rowAdded signal
+	this.rowAdded.emit({
+		rid: rid,
+		row: this.getObj(rid)
+	});
+
 	return rid;
 }
 
@@ -89,6 +123,9 @@ ldc.datamodel.Table.prototype.deleteRow = function(rid) {
 	if (this.rows.hasOwnProperty(rid)) {
 		rid_pool.push(rid);
 		delete this.rows[rid];
+
+		// emit rowDeleted signal
+		this.rowDeleted.emit({rid:rid});
 	}
 }
 
@@ -191,16 +228,24 @@ ldc.datamodel.Table.prototype.getCell = function(rid, field) {
 ldc.datamodel.Table.prototype.updateRow = function(rid, update) {
 	var row = this.rows[rid];
 	if (row != null) {
+		var old_values = JSON.parse(JSON.stringify(this.getObj(rid)));
 		for (var i=0; i < this.header_.length; ++i) {
 			var k = this.header_[i];
 			if (update.hasOwnProperty(k)) {
-				if (is_hash(row[i]) && is_hash(update[k])) {
+				if (is_hash(row[i]) && is_hash(update[k]))
 					update_object(row[i], update[k]);
-				}
-				else {
+				else
 					row[i] = update[k];
-				}
 			}
+		}
+		var new_values = JSON.parse(JSON.stringify(this.getObj(rid)));
+		if (Object.keys(old_values).length > 0) {
+			// emit rowUpdated signal
+			this.rowUpdated.emit({
+				rid: rid,
+				oldRow: old_values,
+				newRow: new_values
+			});
 		}
 	}
 }
@@ -212,10 +257,12 @@ function is_hash(obj) {
 }
 
 function update_object(obj, updater) {
+	var update = {};
 	for (var k in updater) {
 		if (updater.hasOwnProperty(k)) {
 			if (k[k.length-1] == '$') {
-				obj[k.slice(0,-1)] = updater[k];
+				var key = k.slice(0,-1);
+				obj[key] = updater[k];
 			}
 			else if (obj.hasOwnProperty(k) && is_hash(obj[k]) && is_hash(updater[k])) {
 				// recurse
@@ -226,6 +273,7 @@ function update_object(obj, updater) {
 			}
 		}
 	}
+	return update;
 }
 
 /**
@@ -256,6 +304,5 @@ ldc.datamodel.Table.prototype.handleEvent = function(event) {
 		this.deleteRow(rid);
 	}
 }
-
 
 })();
