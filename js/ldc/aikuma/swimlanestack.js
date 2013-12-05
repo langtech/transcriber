@@ -112,6 +112,20 @@ ldc.aikuma.SwimLaneStack.prototype.handleRowAdded = function(param) {
 
 
 /**
+Slot for handling {{#crossLink "datamodel.Table/rowDeleted:event"}}
+{{/crossLink}} signal.
+@method handleRowDeleted
+@param {object} param
+  @param {number} rid
+*/
+ldc.aikuma.SwimLaneStack.prototype.handleRowDeleted = function(param) {
+	Object.keys(this.swimlanes).forEach(function(k) {
+		this.swimlanes[k].handleRowDeleted(param);
+	}, this);
+}
+
+
+/**
 Slot for handling {{#crossLink "datamodel.Table/rowUpdated:event"}}
 {{/crossLink}} signal.
 @method handleRowUpdated

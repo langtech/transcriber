@@ -172,6 +172,7 @@ jQuery(function($) {
 			this.widget.setWidth(w);
 			this.widget.display(beg, dur);
 			table.rowAdded.connect(this.widget, 'handleRowAdded');
+			table.rowDeleted.connect(this.widget, 'handleRowDeleted');
 			table.rowUpdated.connect(this.widget, 'handleRowUpdated');
 			this.widget.segmentSelected.connect(this, 'select_segment');
 			ebus.connect(ldc.waveform.WaveformWindowEvent, this.wwe_handler);
@@ -183,6 +184,7 @@ jQuery(function($) {
 			ebus.disconnect(ldc.waveform.WaveformWindowEvent, this.wwe_handler);
 			ebus.disconnect(ldc.waveform.WaveformSelectEvent, this.wse_handler);
 			table.rowAdded.disconnect(this.widget);
+			table.rowDeleted.disconnect(this.widget);
 			table.rowUpdated.disconnect(this.widget);
 		},
 
