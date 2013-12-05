@@ -103,7 +103,7 @@ ldc.textdisplay.TextEdit.prototype.setTable = function(table) {
  * @return {Object} An instance of the segment widget.
  */
  ldc.textdisplay.TextEdit.prototype.findSegment = function(rid) {
- 	if (this.table && this.table.getCell(rid, 'offset')) {
+ 	if (this.table && this.table.getCell(rid, 'offset') != null) {
  		return new this.segWidget(rid, this.table.getObj(rid));
  	}
  }
