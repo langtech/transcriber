@@ -336,31 +336,30 @@ jQuery(function($) {
 
 	$('#open-local-file').on('click', function() {
 		var file = $('#local-file').prop('files')[0];
-		parse_transcription_file(file)
-		.then(function(obj) {
-			return open_audio_group(obj.meta.original_uuid)
-			.thenResolve(obj)
-			.fail(function(e) {
-				warn(e);
-				return obj;
-			});
-		})
-		.then(function(obj) {
-			table_clear_transcript();
-			var wid = get_waveform_id();
-			for (var i=0, item; item = obj.data[i]; ++i) {
-				var u = [wid, item.offset, item.length, item.speaker, item.transcript, item.translation];
-				table.addRow(u);
-			}
-			textedit.setTable(table);
-		})
-		.fail(function(e) {
-			if (e.stack)
-				console.log(e.stack);
-			else
-				console.log((new Error(e)).stack);
-			alert();
-		});
+		parse_transcription_file(file, ldc.aikuma.AikumaTranscript.parse)
+		.then(load_transcript)
+		.fail(handle_error);
+	});
+
+	// Open Elan Transcript menu
+
+	$('#dialog-open-elan').on('shown.bs.modal', function() {
+		document.forms['form-elan-file'].reset();
+		$('#btn-open-elan-file').prop('disabled', true);
+	});
+
+	$('#input-elan-file').on('change', function(e) {
+		if ($('#input-elan-file').prop('files').length > 0) {
+			$('#btn-open-elan-file').prop('disabled', false);
+		}
+	});
+
+	$('#btn-open-elan-file').on('click', function() {
+		var file = $('#input-elan-file').prop('files')[0];
+		parse_transcription_file(file, ldc.aikuma.ElanTranscript.parse)
+		.then(load_transcript)
+		.fail(handle_error);
+
 	});
 
 	// Open Folder menu
@@ -418,23 +417,7 @@ jQuery(function($) {
 	});
 
 	$('#save-file-btn').on('click', function(e) {
-		var rows = [
-			';; user someuser',
-			';; original_uuid ' + cur_uuid
-		];
-		table.forEach(function(row) {
-			rows.push([
-				row.value('offset'),
-				row.value('offset') + row.value('length'),
-				'speaker:',
-				row.value('transcript'),
-				row.value('translation')
-			].join('\t'));
-		}, function(row) {
-			return row.value('mapoff') == null;
-		});
-		rows.push('');
-		var blob = new Blob([rows.join('\n')], {type: "text/plain;charset=utf-8"});
+		var blob = ldc.aikuma.AikumaTranscript.toBlob(table);
 		var filename = $('#save-file-input').val();
 		saveAs(blob, filename);
 	});
@@ -505,18 +488,19 @@ jQuery(function($) {
 
 
 	/**
-	 * Parse a transcription File object.
-	 *
-	 * @method parse_transcription_file
-	 * @param {File} file A File object containing json.
-	 * @return A promise on parsed object.
-	 */
-	function parse_transcription_file(file) {
+	Parse a transcription File object.
+	
+	@method parse_transcription_file
+	@param {File} file A File object containing json.
+	@param {Function} parse_func A parser function. 
+	@return A promise on parsed object.
+	*/
+	function parse_transcription_file(file, parse_func) {
 		var deferred = Q.defer();
 		var reader = new FileReader;
 		reader.onload = function(e) {
 			try {
-				var obj = ldc.aikuma.AikumaTranscript.parse(reader.result);
+				var obj = parse_func(reader.result);
 				deferred.resolve(obj);
 			} catch (e) {
 				deferred.reject(e);
@@ -527,6 +511,35 @@ jQuery(function($) {
 	}
 
 
+	/**
+	Load transcript and audio into the tool.
+	@param {object} obj Parsed transcript.
+	  @param {object} meta
+	  @param {array} data An array of objects with the following properties
+	    - offset
+	    - length
+	    - speaker
+	    - transcript
+	    - translation
+	*/
+	function load_transcript(obj) {
+		return open_audio_group(obj.meta.original_uuid)
+		.then(function() {
+			return obj;
+		}, function(e) {
+			warn(e);
+			return obj;
+		})
+		.then(function(obj) {
+			table_clear_transcript();
+			var wid = get_waveform_id();
+			for (var i=0, item; item = obj.data[i]; ++i) {
+				var u = [wid, item.offset, item.length, item.speaker, item.transcript, item.translation];
+				table.addRow(u);
+			}
+			textedit.setTable(table);
+		});
+	}
 
 	/**
 	 * Remove transcript segments from table.
@@ -915,6 +928,13 @@ jQuery(function($) {
 		});
 	}
 
+
+	function handle_error(e) {
+		if (e.stack)
+			console.log(e.stack);
+		else
+			console.log((new Error(e)).stack);
+	}
 
 	document.addEventListener('keydown', function(e) {
 		var special = [];
