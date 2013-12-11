@@ -54,6 +54,8 @@ Turn a table object into Aikuma transcription format.
 @method toBlob
 @static
 @param {datamodel.Table} table
+@param {object} meta
+  @param {string} meta.original_uuid
 @return {Blob} A blob of transcription text format.
 */
 ldc.aikuma.AikumaTranscript.toBlob = function(table, meta) {

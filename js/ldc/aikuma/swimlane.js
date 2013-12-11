@@ -270,8 +270,8 @@ Slot handling {{#crossLink "datamodel.Table/rowAdded:event"}}{{/crossLink}}
 signal.
 @method handleRowAdded
 @param {object} param
-  @param {number} rid
-  @param {object} row Object representation of a table row.
+  @param {number} param.rid
+  @param {object} param.row Object representation of a table row.
 */
 ldc.aikuma.SwimLane.prototype.handleRowAdded = function(param, f) {
 	var table_row_emu = {
@@ -294,7 +294,7 @@ Slot handling {{#crossLink "datamodel.Table/rowDeleted:event"}}{{/crossLink}}
 signal.
 @method handleRowDeleted
 @param {object} param
-  @param {number} rid
+  @param {number} param.rid
 */
 ldc.aikuma.SwimLane.prototype.handleRowDeleted = function(param) {
 	if (this.segs.removeSegmentByRid(param.rid))

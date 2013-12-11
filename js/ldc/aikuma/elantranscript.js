@@ -8,6 +8,17 @@
 goog.provide('ldc.aikuma.ElanTranscript');
 
 /**
+Following assumptions are made about aikuma EAF file.
+
+- For each speaker there are 1 or 2 tiers: transcription and translation.
+  Transcription tier is required but translation tier is optional.
+- `TIER_ID` attribute of transcription tier starts with "transcription".
+- Linguistic type of translation tier is `translation-lt`.
+- Transcription tier has time-alignable annotations.
+- Translation tier is associated with a translation tier.
+- Translation tier's annotations are not time-aligned, but symbolically
+  reference an annotation on the associated transcription tier.
+
 @class ElanTranscript
 */
 
@@ -80,6 +91,14 @@ ldc.aikuma.ElanTranscript.parse = function(text) {
 }
 
 
+/**
+@method toBlog
+@static
+@param {datamodel.Table} table
+@param {object} meta
+  @param {string} meta.original_uuid
+@return {Blob} A blog of an EAF xml.
+**/
 ldc.aikuma.ElanTranscript.toBlob = function(table, meta) {
 	ann_count = 0;
 	tier_count = 0;
