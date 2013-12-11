@@ -429,13 +429,15 @@ function select_seg(el) {
 }
 
 function unselect_seg(el) {
-	var a = el.className.split(/\s+/);
-	var i = a.indexOf('aikuma-swimlane-selected-segment');
-	while (i >= 0) {
-		a.splice(i, 1);
-		i = a.indexOf('aikuma-swimlane-selected-segment');
+	if (el != null) {
+		var a = el.className.split(/\s+/);
+		var i = a.indexOf('aikuma-swimlane-selected-segment');
+		while (i >= 0) {
+			a.splice(i, 1);
+			i = a.indexOf('aikuma-swimlane-selected-segment');
+		}
+		el.className = a.join(' ');
 	}
-	el.className = a.join(' ');
 }
 
 
