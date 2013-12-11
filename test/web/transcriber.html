@@ -36,13 +36,19 @@
 						New Transcript
 					</a></li>
 					<li><a href="#file-dialog" data-toggle="modal">
-						Open Local Transcript
+						Open Transcript
+					</a></li>
+					<li><a href="#dialog-open-elan" data-toggle="modal">
+						Open ELAN Transcript
 					</a></li>
 					<li><a href="#folder-dialog" data-toggle="modal">
-						Open Local Folder
+						Open Folder
 					</a></li>
 					<li><a href="#save-file-dialog" data-toggle="modal">
 						Save Transcript
+					</a></li>
+					<li><a href="#save-elan-dialog" data-toggle="modal">
+						Save as ELAN Format
 					</a></li>
 					<li><a id="open-remote-trans" data-toggle="modal">
 						Open Remote Index File (sample)
@@ -151,6 +157,25 @@
 		</div>
 	</div>
 
+	<div id="dialog-open-elan" class="modal">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button class="close" data-dismiss="modal">x</button>
+					<h3>Open ELAN Transcription File</h3>
+				</div>
+				<div class="modal-body">
+					<form name="form-elan-file">
+						<input id="input-elan-file" type="file">
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button id="btn-open-elan-file" class="btn" data-dismiss="modal">Open</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<div id="folder-dialog" class="modal">
 		<div class="modal-dialog">
 			<div class="modal-content">
@@ -195,6 +220,25 @@
 		</div>
 	</div>
 
+	<div id="save-elan-dialog" class="modal">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button class="close" data-dismiss="modal">x</button>
+					<h3>Save as ELAN Format</h3>
+				</div>
+				<div class="modal-body">
+					File name:
+					<form name="save-elan-form">
+						<input id="save-elan-input" type="text">
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button id="save-elan-btn" class="btn" data-dismiss="modal">Save</button>
+				</div>
+			</div>
+		</div>
+	</div>
 	<div id="popup-container"></div>
 	<div id="hidden-container" style="display:none"></div>
 

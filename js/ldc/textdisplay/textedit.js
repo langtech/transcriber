@@ -92,9 +92,11 @@ ldc.textdisplay.TextEdit.prototype.setTable = function(table) {
 	var that = this;
 	table.forEach(function(row) {
 		insort(that.rids, that.spans, row.rid(), row.toObj());
-		var se = new that.segWidget(row.rid(), row.toObj());
-		goog.dom.appendChild(that.container, se.dom());
 	}, this.filter);
+	this.rids.forEach(function(rid) {
+		var se = new that.segWidget(rid, table.getObj(rid));
+		goog.dom.appendChild(this.container, se.dom());
+	}, this);
 }
 
 /**
