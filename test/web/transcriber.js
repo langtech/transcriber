@@ -26,6 +26,8 @@ jQuery(function($) {
 	var map_beg = 0.0;
 	var map_dur = 0.0;
 
+	var cur_uuid;   // uuid of currently loaded audio file
+	var cur_file_meta;  // metadata of currently loaded transcript
 	var cur_audio;  // uuid of currently loaded original audio
 	
 	var ebus = new ldc.event.EventBus;
@@ -199,9 +201,11 @@ jQuery(function($) {
 			$('#remove-seg-btn').prop('disabled', false);
 
 			var rwf = get_waveform();  // rich waveform
-			var reg = rwf.getSelection();
-			rwf.updateRegion(reg.id, sel_beg, sel_dur, rwf.selection_color_dark);
-			rwf.linkRegion(reg.id, sel_rid);
+			if (rwf != null) {
+				var reg = rwf.getSelection();
+				rwf.updateRegion(reg.id, sel_beg, sel_dur, rwf.selection_color_dark);
+				rwf.linkRegion(reg.id, sel_rid);
+			}
 
 			textedit.findSegment(sel_rid).focus();
 		}
@@ -417,11 +421,28 @@ jQuery(function($) {
 	});
 
 	$('#save-file-btn').on('click', function(e) {
-		var blob = ldc.aikuma.AikumaTranscript.toBlob(table);
+		var uuid = cur_uuid == null ? cur_file_meta.original_uuid : cur_uuid;
+		var blob = ldc.aikuma.AikumaTranscript.toBlob(table, {
+			original_uuid: uuid
+		});
 		var filename = $('#save-file-input').val();
 		saveAs(blob, filename);
 	});
 
+	// Save ELAN menu
+
+	$('#save-elan-dialog').on('shown.bs.modal', function() {
+	});
+
+	$('#save-elan-btn').on('click', function(e) {
+		var uuid = cur_uuid == null ? cur_file_meta.original_uuid : cur_uuid;
+		var blob = ldc.aikuma.ElanTranscript.toBlob(table, {
+			original_uuid: uuid
+		});
+		var filename = $('#save-elan-input').val();
+		saveAs(blob, filename);
+	});
+	
 	// open remote sample files
 
 	$('#open-remote-trans').on('click', function() {
@@ -432,7 +453,6 @@ jQuery(function($) {
 			console.log(e);
 		});
 	});
-
 
 	// initialize event bus connections
 	ebus.connect(ldc.waveform.WaveformCursorEvent, {
@@ -532,6 +552,7 @@ jQuery(function($) {
 		})
 		.then(function(obj) {
 			table_clear_transcript();
+			cur_file_meta = obj.meta;
 			var wid = get_waveform_id();
 			for (var i=0, item; item = obj.data[i]; ++i) {
 				var u = [wid, item.offset, item.length, item.speaker, item.transcript, item.translation];

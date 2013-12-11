@@ -47,6 +47,9 @@
 					<li><a href="#save-file-dialog" data-toggle="modal">
 						Save Transcript
 					</a></li>
+					<li><a href="#save-elan-dialog" data-toggle="modal">
+						Save as ELAN Format
+					</a></li>
 					<li><a id="open-remote-trans" data-toggle="modal">
 						Open Remote Index File (sample)
 					</a></li>
@@ -217,6 +220,25 @@
 		</div>
 	</div>
 
+	<div id="save-elan-dialog" class="modal">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button class="close" data-dismiss="modal">x</button>
+					<h3>Save as ELAN Format</h3>
+				</div>
+				<div class="modal-body">
+					File name:
+					<form name="save-elan-form">
+						<input id="save-elan-input" type="text">
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button id="save-elan-btn" class="btn" data-dismiss="modal">Save</button>
+				</div>
+			</div>
+		</div>
+	</div>
 	<div id="popup-container"></div>
 	<div id="hidden-container" style="display:none"></div>
 

@@ -56,16 +56,16 @@ Turn a table object into Aikuma transcription format.
 @param {datamodel.Table} table
 @return {Blob} A blob of transcription text format.
 */
-ldc.aikuma.AikumaTranscript.toBlob = function(table) {
+ldc.aikuma.AikumaTranscript.toBlob = function(table, meta) {
 	var rows = [
 		';; user someuser',
-		';; original_uuid ' + cur_uuid
+		';; original_uuid ' + meta.original_uuid
 	];
 	table.forEach(function(row) {
 		rows.push([
 			row.value('offset'),
 			row.value('offset') + row.value('length'),
-			'speaker:',
+			row.value('speaker'),
 			row.value('transcript'),
 			row.value('translation')
 		].join('\t'));
