@@ -16,8 +16,6 @@ jQuery(function($) {
 	var main = this;
 	var cur_pos = null;
 	var play_pos = 0.0;
-	var play_beg = null;
-	var play_end = null;
 	var sel_beg = 0.0;
 	var sel_dur = 0.0;
 	var sel_waveform;
@@ -95,7 +93,7 @@ jQuery(function($) {
 		},
 
 		select_segment: function(param) {
-			jplayer(sel_sl).jPlayer('stop');
+			rspk_players.stop(sel_sl);
 			$('#play-rspk-btn').button('reset');
 			map_beg = param.mapoff;
 			map_dur = param.maplen;
@@ -212,6 +210,94 @@ jQuery(function($) {
 	};
 	swimlane_stack.init(WAVEFORM.width, WAVEFORM.beg, WAVEFORM.dur);
 
+
+	// Audio player for the original audio.
+	var audio = {
+		player: new ldc.mediaplayer.AudioPlayer,
+		beg_time: 0,
+		end_time: 0,
+
+		init: function(url) {
+			this.player.setAudioUrl(url);
+			this.player.timeUpdated.connect(this, 'update_time');
+		},
+
+		update_time: function(t) {
+			play_pos = t;
+			document.getElementById('pos').textContent = t.toFixed(4);
+			var ev = new ldc.waveform.WaveformCursorEvent(this.player, t);
+			ebus.queue(ev);
+			if (this.end_time != null && t >= this.end_time)
+				document.getElementById('stop-btn').dispatchEvent(new Event('click'));
+			move_waveform(t);
+		},
+
+		play_span: function(beg, end) {
+			this.player.pause();
+			this.beg_time = beg;
+			this.player.seek(beg);
+			this.end_time = end;
+			this.player.play();
+		},
+
+		pause: function() {
+			this.player.pause();
+		},
+
+		stop: function() {
+			this.player.pause();
+			this.player.seek(this.beg_time);
+		},
+
+		resume: function() {
+			this.player.play();
+		}
+	};
+
+
+	// Audio player class for respeaking audio.
+	function SimplePlayer(url) {
+		this.audio = new Audio;
+		this.audio.setAttribute('src', url);
+		var that = this;
+		this.audio.addEventListener('timeupdate', function(e) {
+			if (that.audio.currentTime >= that.cur_end) {
+				that.stop();
+				$('#play-rspk-btn').button('reset');
+			}
+		});
+	}
+
+	SimplePlayer.prototype.play = function(beg, end) {
+		this.cur_beg = beg;
+		this.cur_end = end;
+		this.audio.currentTime = beg;
+		this.audio.play();
+	}
+
+	SimplePlayer.prototype.stop = function() {
+		this.audio.pause();
+	}
+
+	var rspk_players = {
+		players: {},
+
+		add: function(id, url) {
+			this.players[id] = new SimplePlayer(url);
+		},
+
+		play: function(id, beg, end) {
+			if (this.players[id])
+				this.players[id].play(beg, end);
+		},
+
+		stop: function(id) {
+			if (this.players[id])
+				this.players[id].stop();
+		}
+	}
+
+
 	var aikuma = new ldc.aikuma.AikumaFolder;
 
 	function get_waveform_id() {
@@ -238,10 +324,6 @@ jQuery(function($) {
 		ebus.queue(e);
 	}
 
-	function jplayer(slid) {
-		return $('#player-' + slid);
-	}
-
 	function alert2(msg, cls) {
 		$('<div/>')
 		.addClass('alert alert-dismissable fade in')
@@ -265,26 +347,25 @@ jQuery(function($) {
 	$('#play-btn').on('click', function(e) {
 		var text = $(this).text().trim();
 		if (text == 'Play') {
-			play_beg = sel_beg;
-			play_end = sel_beg + sel_dur;
-			if (play_beg == play_end)
-				play_end = get_waveform().length();
-			$('#player').jPlayer('play', play_beg);
+			var end = sel_beg + sel_dur;
+			if (sel_beg == end)
+				end = get_waveform().length();
+			audio.play_span(sel_beg, end);
 			$(this).button('play');
 		}
 		else if (text == 'Resume') {
-			$('#player').jPlayer('play');
+			audio.resume();
 			$(this).button('play');
 		}
 		else if (text == 'Pause') {
-			$('#player').jPlayer('pause');
+			audio.pause();
 			$(this).button('pause');
 		}
 		$('#stop-btn').prop('disabled', false);
 	});
 
 	$('#stop-btn').on('click', function() {
-		$('#player').jPlayer('pause', play_beg);
+		audio.stop();
 		$('#play-btn').button('reset');
 		$('#stop-btn').prop('disabled', true);
 	});
@@ -313,11 +394,11 @@ jQuery(function($) {
 	$('#play-rspk-btn').on('click', function() {
 		var text = $(this).text().trim();
 		if (text == 'Play Respeaking') {
-			jplayer(sel_sl).jPlayer('play', map_beg);
+			rspk_players.play(sel_sl, map_beg, map_beg + map_dur);
 			$(this).button('play');
 		}
 		else if (text == 'Stop') {
-			jplayer(sel_sl).jPlayer('stop');
+			rspk_players.stop(sel_sl);
 			$(this).button('reset');
 		}
 	});
@@ -489,7 +570,7 @@ jQuery(function($) {
 		handleEvent: function(e) {
 			var map = e.args().map;
 			var slid = e.args().id;
-			jplayer(sel_sl).jPlayer('stop');
+			rspk_players.stop(sel_sl);
 			$('#play-rspk-btn').button('reset');
 			map_beg = map.offset;
 			map_dur = map.length;
@@ -716,58 +797,25 @@ jQuery(function($) {
 
 
 	/**
-	 * Create a new jPlayer for the original recording.
+	 * Create a new player for the original recording.
 	 *
 	 * @param {String} audio_url
 	 * @param {String} format Audio format, e.g. oga|mp3|...
 	 */
 	function add_original_audio(audio_url, format) {
-		var opts = {};
-		opts[format] = audio_url;
-		var $player = $('<div id="player"/>').appendTo('#players');
-		$player.jPlayer({
-			ready: function() {
-				$(this).jPlayer('setMedia', opts);
-				$('#play-btn').prop('disabled', false);
-			},
-			supplied: format,
-			timeupdate: function(e) {
-				play_pos = e.jPlayer.status.currentTime;
-				$('#pos').text(Math.round(play_pos * 10000) / 10000);
-				var ev = new ldc.waveform.WaveformCursorEvent(e.jPlayer, play_pos);
-				ebus.queue(ev);
-				if (play_pos >= play_end) {
-					$('#stop-btn').trigger('click');
-				}
-				move_waveform(play_pos);
-			}
-		});
+		audio.init(audio_url);
 	}
 
 
 	/**
-	 * Create a new jPlayer for given respeaking.
+	 * Create a new player for given respeaking.
 	 *
 	 * @param {String} audio_url
 	 * @param {String} format Audio format, e.g. oga|mp3|...
 	 * @param {Number} id A unique ID for the audio.
 	 */
 	function add_respeaking_audio(audio_url, format, id) {
-		var opts = {};
-		opts[format] = audio_url;
-
-		$('<div/>', {id:'player-' + id}).appendTo('#players').jPlayer({
-			ready: function() {
-				$(this).jPlayer('setMedia', opts);
-			},
-			supplied: format,
-			timeupdate: function(e) {
-				if (e.jPlayer.status.currentTime >= map_beg + map_dur) {
-					jplayer(sel_sl).jPlayer('stop');
-					$('#play-rspk-btn').button('reset');
-				}
-			}
-		});
+		rspk_players.add(id, audio_url);
 	}
 
 

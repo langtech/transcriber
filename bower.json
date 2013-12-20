@@ -4,12 +4,9 @@
   "main": "test/web/transcriber.html",
   "dependencies": {
     "bootstrap": "*",
-    "jplayer": "*",
     "jquery": "*",
     "q": "*",
     "FileSaver": "*",
-    "angular": "*",
-    "jquery": "*",
-    "jplayer": "*"
+    "angular": "*"
   }
 }
