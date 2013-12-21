@@ -217,9 +217,11 @@ jQuery(function($) {
 		beg_time: 0,
 		end_time: 0,
 
-		init: function(url) {
+		init: function(url, callback) {
+			this.ready_callback = callback;
 			this.player.setAudioUrl(url);
 			this.player.timeUpdated.connect(this, 'update_time');
+			this.player.playerReady.connect(this, 'ready_callback');
 		},
 
 		update_time: function(t) {
@@ -803,7 +805,9 @@ jQuery(function($) {
 	 * @param {String} format Audio format, e.g. oga|mp3|...
 	 */
 	function add_original_audio(audio_url, format) {
-		audio.init(audio_url);
+		audio.init(audio_url, function() {
+			$('#play-btn').prop('disabled', false);
+		});
 	}
 
 
