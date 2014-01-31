@@ -97,7 +97,8 @@ ldc.aikuma.AikumaFolder.prototype.loadFolder = function(filelist, progress) {
 }
 
 /**
-Load an index obtained from the Aikuma web server.
+Load an index obtained from the Aikuma web server, e.g. the http server
+embedded in the Aikuma app.
 
 @method loadWebIndex
 @param {object} index
@@ -133,6 +134,61 @@ ldc.aikuma.AikumaFolder.prototype.loadWebIndex = function(index) {
 		this.urls[uuid] = {
 			jpg: '/speaker/' + uuid + '/image',
 			'small.jpg': '/speaker/' + uuid + '/smallimage'
+		};
+	}
+}
+
+/**
+Load an index obtained from a static Aikuma web server serviing static files.
+
+@method loadStaticWebIndex
+@param {object} index
+@param {string} [baseurl="aikuma"] Base URL for the Aikuma directory structure.
+    By default, it's the "aikuma" folder next to the main HTML page.
+*/
+ldc.aikuma.AikumaFolder.prototype.loadStaticWebIndex = function(index, baseurl) {
+	baseurl = baseurl == null ? 'aikuma' : baseurl;
+
+	this.originals = index.originals;
+	this.commentaries = index.commentaries;
+	this.speakers = index.speakers;
+	this.urls = {};
+	this.org2comm = {};
+
+	// obj is a recording json
+	function ensure_backward_compatibility(obj) {
+		obj['name'] = obj['recording_name'];
+		if (!obj.hasOwnProperty('originalUUID'))
+			obj['originalUUID'] = obj['original_uuid'];
+	}
+
+	for (var uuid in index.commentaries) {
+		var obj = index.commentaries[uuid];
+		ensure_backward_compatibility(obj);
+		var orguuid = obj.originalUUID;
+		if (!this.org2comm.hasOwnProperty(orguuid))
+			this.org2comm[orguuid] = {};
+		this.org2comm[orguuid][obj.uuid] = 1;
+		this.urls[uuid] = {
+			wav: baseurl + '/recordings/' + uuid + '.wav',
+			map: baseurl + '/recordings/' + uuid + '.map',
+			shape: baseurl + '/recordings/' + uuid + '.shape'
+		};
+	}
+
+	for (var uuid in index.originals) {
+		ensure_backward_compatibility(index.originals[uuid]);
+		this.urls[uuid] = {
+			wav: baseurl + '/recordings/' + uuid + '.wav',
+			map: baseurl + '/recordings/' + uuid + '.map',
+			shape: baseurl + '/recordings/' + uuid + '.shape'
+		};
+	}
+
+	for (var uuid in index.speakers) {
+		this.urls[uuid] = {
+			jpg: baseurl + '/images/' + uuid + '.jpg',
+			'small.jpg': baseurl + '/images/' + uuid + '.small.jpg'
 		};
 	}
 }

@@ -1,5 +1,4 @@
 goog.require('ldc');
-goog.require('goog.net.XhrIo');
 goog.require('goog.cssom');
 
 jQuery(function($) {
@@ -470,24 +469,7 @@ jQuery(function($) {
 			$('#progress-bar').css('width', Math.round(x) + '%');
 			if (x >= 100) {
 				$('#close-folder-dialog-btn').prop('disabled', false);
-				var $list = $('#recording-list');
-				$list[0].innerHTML = '';
-				var originals = aikuma.getOriginals();
-				Object.keys(originals).sort(function(a,b) {
-					var s = originals[a].name.toLowerCase();
-					var t = originals[b].name.toLowerCase();
-					return s < t ? -1 : (s > t ? 1 : 0);
-				}).forEach(function(uuid) {
-					var json = originals[uuid];
-					if (json) {
-						var title = json['name'];
-						var el = $('<option>' + title + '</option>').appendTo($list);
-						el.attr('value', uuid);
-						if (aikuma.getRecordingUrl(uuid) == null) {
-							el.attr('disabled', true);
-						}
-					}
-				});
+				set_recording_list();
 			}
 		});
 	});
@@ -530,13 +512,27 @@ jQuery(function($) {
 	// open remote sample files
 
 	$('#open-remote-trans').on('click', function() {
-		download(AIKUMA_BASE + '/sample.index.json')
-		.then(process_aikuma_recording_index)
-		.fail(function(e) {
-			console.log('failed starting up the app');
-			console.log(e);
-		});
+		download(AIKUMA_BASE + '/index.json')
+		.then(function(data) {
+			aikuma.loadStaticWebIndex(JSON.parse(data), AIKUMA_BASE);
+			set_recording_list();
+		})
+		.fail(handle_error);
+		// TODO: notify user of the error
 	});
+
+
+	// open from aikuma app
+
+	$('#open-from-aikuma').on('click', function() {
+		download('/index.json')
+		.then(function(data) {
+			aikuma.loadWebIndex(JSON.parse(data));
+			set_recording_list();
+		})
+		.fail(handle_error);
+	});
+
 
 	// initialize event bus connections
 	ebus.connect(ldc.waveform.WaveformCursorEvent, {
@@ -589,6 +585,35 @@ jQuery(function($) {
 	}
 
 	textedit.setTable(table);
+
+
+
+	/**
+	Re-populate the recording list dropdown.
+	@method set_recording_list
+	*/
+	function set_recording_list() {
+		var $list = $('#recording-list');
+		$list[0].innerHTML = '';
+
+		var originals = aikuma.getOriginals();
+		console.log(originals);
+		Object.keys(originals).sort(function(a,b) {
+			var s = originals[a].name.toLowerCase();
+			var t = originals[b].name.toLowerCase();
+			return s < t ? -1 : (s > t ? 1 : 0);
+		}).forEach(function(uuid) {
+			var json = originals[uuid];
+			if (json) {
+				var title = json['name'];
+				var el = $('<option>' + title + '</option>').appendTo($list);
+				el.attr('value', uuid);
+				if (aikuma.getRecordingUrl(uuid) == null) {
+					el.attr('disabled', true);
+				}
+			}
+		});
+	}
 
 
 	/**
@@ -727,23 +752,37 @@ jQuery(function($) {
 
 		add_original_audio(url, 'wav');
 
-		var shape_url = aikuma.getShapeFileUrl(uuid);
-		if (shape_url == null) {
-			decode_audio_url(url, function(audio_buffer) {
+		// generate waveform on the fly
+		var generate_waveform = function(audio_url) {
+			decode_audio_url(audio_url, function(audio_buffer) {
 				var shape = ldc.waveform.Utils.makeShapeFile(
 					WAVEFORM.max_width, WAVEFORM.min_dur, audio_buffer, 1
 				);
 				display_waveform(shape);
-				deferred.resolve();
-			});
+			});			
+		};
+
+		var shape_url = aikuma.getShapeFileUrl(uuid);
+
+		if (shape_url == null) {
+			generate_waveform(url);
+			deferred.resolve();
 		}
 		else {
-			download(shape_url)
+			download(shape_url, 'array_buffer')
 			.then(function(array_buffer) {
-				var buffer = new ldc.waveform.WaveformBuffer(array_buffer);
-				display_waveform(shape);
-				defferred.resolved();
+				display_waveform(array_buffer);
+				deferred.resolve();
 			})
+			.fail(function(e) {
+				if (e instanceof NotFoundError) {
+					generate_waveform(url);
+					deferred.resolve();
+				}
+				else {
+					deferred.reject(e);
+				}
+			});
 		}
 
 		var process_respeaking = function(rspkuuid) {
@@ -845,56 +884,6 @@ jQuery(function($) {
 	}
 
 
-	function add_user_image_from_web(recording_uuid, i) {
-		var url = AIKUMA_BASE + '/recordings/' + recording_uuid + '.json';
-		download(url)
-		.then(function(json) {
-			var o = JSON.parse(json);
-			var image_url = AIKUMA_BASE + '/images/' + o.creator_uuid + '.small.jpg';
-
-			// face detection
-			var image = new Image;
-			image.onload = function() {
-				var opts = {
-					"canvas" : ccv.grayscale(ccv.pre(image)),
-					"cascade" : cascade,
-					"interval" : 5,
-					"min_neighbors" : 1,
-					"async" : true,
-					"worker" : 1
-				}
-				ccv.detect_objects(opts)(function(r) {
-					var x = 0;
-					var y = 0;
-					var el = $('#picture-' + i)[0];
-					if (r.length > 0) {
-						x = el.clientWidth / 2 - (r[0].x + r[0].width / 2);
-						y = el.clientHeight / 2 - (r[0].y + r[0].height / 2);
-					}
-					el.style.backgroundImage = 'url(' + image_url + ')';
-					el.style.backgroundPosition = x + 'px ' + y + 'px';
-				});
-
-			};
-			image.src = image_url;
-
-			var $img = $('<img src="' + image_url + '"/>').appendTo('#hidden-container');
-			$('#picture-' + i).popover({
-				placement: 'right',
-				trigger: 'hover',
-				html: true,
-				content: $img,
-				container: '#popup-container'
-			});
-
-		})
-		.fail(function(e) {
-			console.log('failed to get user image url');
-			console.log(e);
-		})
-	}
-
-
 	// waveform setup
 	function setup_waveform(raw_data) {
 		waveforms = {};
@@ -930,6 +919,13 @@ jQuery(function($) {
 		}
 	}
 
+	// thrown when download() encounters 404
+	function NotFoundError(msg) {
+		this.name = 'NotFoundError';
+		this.message = msg;
+		this.stack = (new Error(msg)).stack;
+	}
+
 	/**
 	 * @method download
 	 * @param {String} url
@@ -939,48 +935,21 @@ jQuery(function($) {
 	 */
 	function download(url, type) {
 		var deferred = Q.defer();
-		var xhr = new goog.net.XhrIo;
-		if (type == 'array_buffer') {
-			xhr.setResponseType(goog.net.XhrIo.ResponseType.ARRAY_BUFFER);
+		var xhr = new XMLHttpRequest;
+		xhr.onload = function(e) {
+			if (xhr.status == 404)
+				deferred.reject(new NotFoundError('Not found: ' + url));
+			else
+				deferred.resolve(type == 'array_buffer' ? this.response : this.responseText);
 		}
-		else {
-			xhr.setResponseType(goog.net.XhrIo.ResponseType.TEXT);
-		}
-		xhr.listen(goog.net.EventType.COMPLETE, function(e) {
-			deferred.resolve(e.target.getResponse());
-		});
-		xhr.listen(goog.net.EventType.ERROR, function(e) {
+		xhr.onerror = function() {
 			deferred.reject(e);
-		})
-		xhr.send(url);
+		}
+		xhr.open('get', url, true);
+		if (type == 'array_buffer')
+			xhr.responseType = 'arraybuffer';
+		xhr.send();
 		return deferred.promise;
-	}
-
-
-	function process_aikuma_recording_index(json) {
-		var o = JSON.parse(json);
-
-		add_original_audio(AIKUMA_BASE + '/recordings/' + o.original + '.ogg', 'oga');
-
-		download(AIKUMA_BASE + '/recordings/' + o.original + '.shape', 'array_buffer')
-		.then(setup_waveform)
-		.fail(function(e) {
-			console.log('shape file download failed');
-			console.log(e);
-		});
-
-		o.respeakings.forEach(function(uuid, i) {
-			download(AIKUMA_BASE + '/recordings/' + uuid + '.map')
-			.then(function(map) {
-				var sl = swimlanes.add(map);
-				add_respeaking_audio(AIKUMA_BASE + '/recordings/' + uuid + '.ogg', 'oga', sl.id);
-				add_user_image_from_web(uuid, sl.id);
-			})
-			.fail(function(e) {
-				console.log('failed to add swim lane for ' + i);
-				console.log(e);
-			});
-		});
 	}
 
 
