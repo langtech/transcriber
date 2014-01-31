@@ -469,24 +469,25 @@ jQuery(function($) {
 		aikuma.loadFolder($('#local-folder-input').prop('files'), function(x) {
 			$('#progress-bar').css('width', Math.round(x) + '%');
 			if (x >= 100) {
-				aikuma.buildRecordingGroups();
-
 				$('#close-folder-dialog-btn').prop('disabled', false);
 				var $list = $('#recording-list');
 				$list[0].innerHTML = '';
-				for (var uuid in aikuma.recording_groups) {
-					if (aikuma.recordings.hasOwnProperty(uuid)) {
-						var json = aikuma.recordings[uuid]['json'];
-						if (json) {
-							var title = json['recording_name'];
-							var el = $('<option>' + title + '</option>').appendTo($list);
-							el.attr('value', uuid);
-							if (aikuma.recordings[uuid]['wav'] == null) {
-								el.attr('disabled', true);
-							}
+				var originals = aikuma.getOriginals();
+				Object.keys(originals).sort(function(a,b) {
+					var s = originals[a].name.toLowerCase();
+					var t = originals[b].name.toLowerCase();
+					return s < t ? -1 : (s > t ? 1 : 0);
+				}).forEach(function(uuid) {
+					var json = originals[uuid];
+					if (json) {
+						var title = json['name'];
+						var el = $('<option>' + title + '</option>').appendTo($list);
+						el.attr('value', uuid);
+						if (aikuma.getRecordingUrl(uuid) == null) {
+							el.attr('disabled', true);
 						}
 					}
-				}
+				});
 			}
 		});
 	});
@@ -672,83 +673,46 @@ jQuery(function($) {
 
 
 	/**
-	 * Read PCM samples from the audio file.
-	 *
-	 * Seems to be a little unreliable. For example, sometimes rendering is
-	 * not complete. Also, various random amount of offset was added at the
-	 * beginning.
-	 *
-	 * @param {File} file Audio file.
-	 * @param {Number} channels Number of channels to extract (default=1).
-	 * @param {Function} callback A function taking an AudioBuffer object.
-	 */
-	function read_audio_file(file, channels, callback) {
-		if (channels == null) {
-			channels = 1;
-		}
-		url = URL.createObjectURL(file);
-		audio = new Audio(url);
+	Download and decode audio file.
 
-		audio.addEventListener('durationchange', function(e) {
-			var context = new webkitOfflineAudioContext(channels, 44100 * audio.duration, 44100);
-			var node1 = context.createMediaElementSource(audio);
-			var node3 = context.destination; //context.createMediaStreamDestination();
-
-			node1.connect(node3);
-
-			context.oncomplete = function(e) {
-				callback(e.renderedBuffer);
-			};
-
-			context.startRendering();
-			audio.play();
-
-		});
-
-		audio.load();
-	}
-
-	/**
-	 * Decode audio file and get PCM samples.
-	 *
-	 * Seems to be more accurate than the method using OfflineAudioContext.
-	 * However, cannot handle large audio file, e.g. those longer than 20 min.
-	 *
-	 * @param {File} file Audio file.
-	 * @param {Function} callback A function taking an AudioBuffer object.
-	 */
-	function decode_audio_file(file, callback) {
-		var reader = new FileReader;
-		reader.onload = function(e) {
+	@param {String} url
+	@param {Function} callback A function taking an AudioBuffer object.
+	*/
+	function decode_audio_url(url, callback) {
+		download(url, 'array_buffer')
+		.then(function(data) {
 			var context = new webkitAudioContext;
-			context.decodeAudioData(this.result, function(decoded) {
-				callback(decoded);
-			}, function() {
+			context.decodeAudioData(data, callback, function() {
 				console.log('decoding error');
 			});
-		};
-		reader.readAsArrayBuffer(file);
+		});
 	}
 
 
 	/**
-	 * @method open_audio_group
-	 * @param {String} uuid UUID of the original audio.
-	 * @return {Promise} A promise for null.
-	 */
+	Render shape file. Re-associate segments to the new waveform.
+
+	@method display_waveform
+	@param {ldc.waveform.WaveformBuffer} shape
+	*/
+	function display_waveform(shape) {
+		setup_waveform(shape);
+
+		var w = get_waveform_id();
+		transcript_segments().forEach(function(rid) {
+			table.updateRow(rid, {waveform:w});
+		});
+	}
+
+
+	/**
+	Load a recording and its respeakings.
+
+	@method open_audio_group
+	@param {String} uuid UUID of the original audio.
+	@return {Promise} A promise for null.
+	*/
 	function open_audio_group(uuid) {
-		var grp = aikuma.recording_groups[uuid];
-
-		if (grp == null) {
-			return Q.reject('No recording group by the UUID: ' + uuid);
-		}
-
-		var recording = aikuma.recordings[grp.original];
-
-		if (recording == null) {
-			return Q.reject('No original audio by UUID: ' + grp.original);
-		}
-
 		$('#players')[0].innerHTML = '';
 		$('#pictures')[0].innerHTML = '';
 		$('#swimlane-containers')[0].innerHTML = '';
@@ -756,42 +720,60 @@ jQuery(function($) {
 		cur_uuid = uuid;
 
 		var deferred = Q.defer();
-		var url = URL.createObjectURL(recording['wav']);
+		var url = aikuma.getRecordingUrl(uuid);
+
+		if (url == null)
+			return Q.reject('No original audio by UUID: ' + uuid);
+
 		add_original_audio(url, 'wav');
 
-		decode_audio_file(recording['wav'], function(audio_buffer) {
-			var shape = ldc.waveform.Utils.makeShapeFile(
-				WAVEFORM.max_width, WAVEFORM.min_dur, audio_buffer, 1
-			);
-			setup_waveform(shape);
-
-			var w = get_waveform_id();
-			transcript_segments().forEach(function(rid) {
-				table.updateRow(rid, {waveform:w});
+		var shape_url = aikuma.getShapeFileUrl(uuid);
+		if (shape_url == null) {
+			decode_audio_url(url, function(audio_buffer) {
+				var shape = ldc.waveform.Utils.makeShapeFile(
+					WAVEFORM.max_width, WAVEFORM.min_dur, audio_buffer, 1
+				);
+				display_waveform(shape);
+				deferred.resolve();
 			});
-			deferred.resolve();
-		});
+		}
+		else {
+			download(shape_url)
+			.then(function(array_buffer) {
+				var buffer = new ldc.waveform.WaveformBuffer(array_buffer);
+				display_waveform(shape);
+				defferred.resolved();
+			})
+		}
 
-		var make_cb = function(respeaking) {
-			return function() {
-				var sl = swimlanes.add(this.result);
-				var image_file = aikuma.users[respeaking['json']['creator_uuid']]['small.jpg'];
-				var image_url = URL.createObjectURL(image_file);
-				var audio_url = URL.createObjectURL(respeaking['wav']);
+		var process_respeaking = function(rspkuuid) {
+			download(aikuma.getMapFileUrl(rspkuuid))
+			.then(function(data) {
+				var sl = swimlanes.add(data);
+				// TODO: should be able to support multiple speakers
+				var spkruuid = aikuma.getRecordingInfo(rspkuuid).speakerUUIDs;
+				if (typeof spkruuid == 'array')
+					spkruuid = spkruuid[0];
+				else
+					// for backward compatibility
+					spkruuid = aikuma.getRecordingInfo(rspkuuid).creator_uuid;
+				var image_url = aikuma.getSmallSpeakerImageUrl(spkruuid);
+				var audio_url = aikuma.getRecordingUrl(rspkuuid);
 				add_user_image(image_url, sl.id);
 				add_respeaking_audio(audio_url, 'wav', sl.id);
-			};
-		}
+			})
+			.fail(handle_error);
+		};
 
 		swimlanes.tear_down();
 		table_clear_swimlane();
 		swimlanes.init();
-		for (var i=0, item; item = aikuma.recordings[grp.respeakings[i]]; ++i) {
-			if (item.json && item['wav']) {
-				var reader = new FileReader;
-				reader.onload = make_cb(item);
-				reader.readAsText(item['map']);
-			}
+
+		var respeakings = aikuma.getCommentaryUUIDs(uuid);
+		if (respeakings != null) {
+			respeakings.forEach(function(rspkuuid) {
+				process_respeaking(rspkuuid);
+			});
 		}
 
 		return deferred.promise;

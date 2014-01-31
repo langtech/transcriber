@@ -1,160 +1,247 @@
 (function() {
 
 /**
- * @module ldc
- * @submodule aikuma
- * @namespace aikuma
- */
+@module ldc
+@submodule aikuma
+@namespace aikuma
+*/
 goog.provide('ldc.aikuma.AikumaFolder');
 
 /**
- * Aikuma data directory reader. Only works with Chrome browser.
- *
- * @class AikumaFolder
- * @constructor
- */
+Aikuma data directory reader. Only works with Chrome browser.
+
+@class AikumaFolder
+@constructor
+*/
 ldc.aikuma.AikumaFolder = function() {
-	/**
-	 * Collection of objects related to users.
-	 * @property users
-	 */
-	this.users = {};
-
-	/**
-	 * Collection of objects related to recordings. Hash of hash with
-	 * structure: uuid -> <type> -> file_object, where <type> can be
-	 *
-	 *   - json
-	 *   - map
-	 *   - wav
-	 *   - ...
-	 *
-	 * @property recordings
-	 */
-	this.recordings = {};
-
-	/**
-	 * Collection of objects representing a group of recodgins. Keyed
-	 * by uuid of original recording.
-	 *
-	 * Each item has two properties:
-	 *   original -- uuid of the original recording
-	 *   respeakings -- array of uuids of respeakings
-	 *
-	 * @property recording_groups
-	 */
-	this.recording_groups = {};
+	this.originals = {};
+	this.commentaries = {};
+	this.org2comm = {};  // list of commentary uuids by original uuid
+	this.speakers = {};
+	this.urls = {};  // keys are a file extension, values are File object
 }
 
 /**
- * Load a FileList object.
- *
- * @method localFolder
- * @param {FileList} filelist
- * @param {Function} progress A callback function that is called when progress
- *   is made. The argument of the function is a percentage.
- */
+Load a FileList object.
+
+@method loadFolder
+@param {FileList} filelist
+@param {Function} progress A callback function that is called when progress
+	is made. The argument of the function is a percentage.
+*/
 ldc.aikuma.AikumaFolder.prototype.loadFolder = function(filelist, progress) {
-	total_count = filelist.length;
-	count = 0;
+	var total_count = filelist.length;
+	var count = 0;
 
-	this.users = {};
-	this.recordings = {};
-	this.recording_groups = {};
-
+	var re = /.*\/(recordings|images)\/(.*?)\.(.*)$/;
+	var re2 = /.*\/(users)\/(.*?)\/metadata\.json$/;
 	var that = this;
-	var updater = function(db_type, uuid, type, obj) {
-		var db = {};
-		if (db_type == 'user') {
-			db = that.users;
-		}
-		else if (db_type == 'recording') {
-			db = that.recordings;
-		}
-		var record = db[uuid] || {};
-		record[type] = obj;
-		db[uuid] = record;
-		progress(++count / total_count * 100);
-	};
+
+	this.originals = {};
+	this.commentaries = {};
+	this.speakers = {};
+	this.urls = {};
+	this.org2comm = {};
 
 	for (var i=0, file; file = filelist[i]; ++i) {
-		var r = get_file_type(file);
-		if (r != null) {
-			if (r[2] == 'json') {
-				var reader = new FileReader;
-				reader.onload = (function(db, uuid, type) {
-					return function() {
-						updater(db, uuid, type, JSON.parse(this.result));
-					};
-				}).apply(null, r);
-				reader.readAsText(file);
-			}
-			else {
-				updater.apply(null, r.concat(file));
-			}
+
+		var p = file.webkitRelativePath;
+		var m = re.exec(p);
+
+		if (m == null)
+			m = re2.exec(p);
+		if (m == null) {
+			progress(++count / total_count * 100);
+			continue;
+		}
+
+		var rootdir = m[1];
+		var uuid = m[2];
+		var file_ext = m[3];
+
+		if (rootdir == 'users' && file_ext == 'json') {
+			read_text_file(file, (function(uuid) {
+				return function(text) {
+					that.speakers[uuid] = JSON.parse(text);
+					progress(++count / total_count * 100);
+				};
+			})(uuid));
+		}
+		else if (rootdir == 'recordings' && file_ext == 'json') {
+			read_text_file(file, (function(uuid) {
+				return function(text) {
+					var obj = JSON.parse(text);
+					obj['name'] = obj['recording_name']; // for backward compatibility
+					var orguuid = obj.originalUUID;
+					if (orguuid == null)
+						orguuid = obj.original_uuid; // for backward compatibility
+					if (orguuid == null)
+						that.originals[uuid] = obj;
+					else {
+						that.commentaries[uuid] = obj;
+						if (!that.org2comm.hasOwnProperty(orguuid))
+							that.org2comm[orguuid] = {};
+						that.org2comm[orguuid][uuid] = true;
+					}
+					progress(++count / total_count * 100);
+				};
+			})(uuid));
 		}
 		else {
+			if (typeof this.urls[uuid] == 'undefined')
+		   		this.urls[uuid] = {};
+			this.urls[uuid][file_ext] = URL.createObjectURL(file);
 			progress(++count / total_count * 100);
 		}
 	}
 }
 
 /**
- * Build an index of recording groups. Each recording group consists of
- * an original recording and an array of respeakings.
- */
-ldc.aikuma.AikumaFolder.prototype.buildRecordingGroups = function() {
-	for (var uuid in this.recordings) {
-		var item = this.recordings[uuid];
-		if (item['json'] == null) {
-			continue;
-		}
-		if (item['json']['original_uuid']) {
-			if (this.recording_groups[item['json']['original_uuid']] == null) {
-				this.recording_groups[item['json']['original_uuid']] = {
-					original: item['json']['original_uuid'],
-					respeakings: [uuid]
-				};
-			}
-			else {
-				this.recording_groups[item['json']['original_uuid']].respeakings.push(uuid);
-			}
-		}
-		else if (this.recording_groups[uuid] == null) {
-			this.recording_groups[uuid] = {
-				original: uuid,
-				respeakings: []
-			};
-		}
+Load an index obtained from the Aikuma web server.
+
+@method loadWebIndex
+@param {object} index
+*/
+ldc.aikuma.AikumaFolder.prototype.loadWebIndex = function(index) {
+	this.originals = index.originals;
+	this.commentaries = index.commentaries;
+	this.speakers = index.speakers;
+	this.urls = {};
+	this.org2comm = {};
+
+	for (var uuid in index.commentaries) {
+		var obj = index.commentaries[uuid];
+		if (this.org2comm.hasOwnProperty(obj.originalUUID))
+			this.org2comm[obj.originalUUID] = {};
+		this.org2comm[obj.originalUUID][obj.uuid] = 1;
+		this.urls[uuid] = {
+			wav: '/recording/' + uuid,
+			map: '/recording/' + uuid + '/mapfile',
+			shape: '/recording/' + uuid + '/shapefile'
+		};
+	}
+
+	for (var uuid in index.originals) {
+		this.urls[uuid] = {
+			wav: '/recording/' + uuid,
+			map: '/recording/' + uuid + '/mapfile',
+			shape: '/recording/' + uuid + '/shapefile'
+		};
+	}
+
+	for (var uuid in index.speakers) {
+		this.urls[uuid] = {
+			jpg: '/speaker/' + uuid + '/image',
+			'small.jpg': '/speaker/' + uuid + '/smallimage'
+		};
 	}
 }
 
-// For a file, figure out
-//   1) whether it's about user or recording,
-//   2) uuid, and
-//   3) file type.
-function get_file_type(file) {
-	var path = file.webkitRelativePath.split('/');
-	var m = /(.*?)\.(.*)/.exec(file.name);
-	if (m == null) {
-		return null;
-	}
-	if (m[2] == 'json') {
-		if (m[1] == 'metadata') {
-			if (path[1] == 'users') {
-				return ['user', path[2], 'json'];
-			}
-		}
-		else {
-			return ['recording', m[1], 'json'];
-		}
-	}
-	else if (m[2] == 'wav' || m[2] == 'shape' || m[2] == 'map') {
-		return ['recording', m[1], m[2]];
-	}
-	else if (m[2] == 'small.jpg') {
-		return ['user', m[1], m[2]];
-	}
+/**
+Get the full list of original recordings.
+
+@method getOriginals
+@return {object} A set of recording metadata json objects. Keys are a UUID.
+*/
+ldc.aikuma.AikumaFolder.prototype.getOriginals = function() {
+	return this.originals;
+}
+
+
+/**
+Get the URL of the given recording UUID.
+
+@method getRecordingUrl
+@param {string} uuid Recording UUID.
+@return {string} URL for the recording file.
+*/
+ldc.aikuma.AikumaFolder.prototype.getRecordingUrl = function(uuid) {
+	if (this.urls.hasOwnProperty(uuid))
+		return this.urls[uuid].wav;
+}
+
+/**
+Get recording metadata.
+
+@method getRecordingInfo
+@param {string} uuid Recording UUID
+@return {object} A JSON object containing information about the recording.
+*/
+ldc.aikuma.AikumaFolder.prototype.getRecordingInfo = function(uuid) {
+	var result = null;
+	if (this.originals.hasOwnProperty(uuid))
+		result = this.originals[uuid];
+	else if (this.commentaries.hasOwnProperty(uuid))
+		result = this.commentaries[uuid];
+	return result;
+}
+
+/**
+Returns UUIDs of commentaries.
+
+@method getCommentaryUUIDs
+@param {string} uuid UUID of the original recording.
+@return {array} List of UUIDs.
+*/
+ldc.aikuma.AikumaFolder.prototype.getCommentaryUUIDs = function(uuid) {
+	var org = this.org2comm[uuid];
+	return org == null ? null :	Object.getOwnPropertyNames(this.org2comm[uuid]);
+}
+
+/**
+Returns the URL for a map file given a recording UUID.
+
+@method getMapFileUrl
+@param {string} uuid UUID of a commentary.
+@return {string} URL for a map file.
+*/
+ldc.aikuma.AikumaFolder.prototype.getMapFileUrl = function(uuid) {
+	if (this.urls.hasOwnProperty(uuid))
+		return this.urls[uuid].map;
+}
+
+/**
+Returns the URL for a shape file given a recording UUID.
+
+@method getShapeFileUrl
+@param {string} uuid UUID of a commentary.
+@return {string} URL for a shape file.
+*/
+ldc.aikuma.AikumaFolder.prototype.getShapeFileUrl = function(uuid) {
+	if (this.urls.hasOwnProperty(uuid))
+		return this.urls[uuid].shape;
+}
+
+/**
+Returns the URL for a speaker image file the given recording UUID.
+
+@method getSpeakerImageUrl
+@param {string} uuid UUID of a commentary.
+@return {string} URL for a speaker image file.
+*/
+ldc.aikuma.AikumaFolder.prototype.getSpeakerImageUrl = function(uuid) {
+	if (this.urls.hasOwnProperty(uuid))
+		return this.urls[uuid].jpg;
+}
+
+/**
+Returns the URL for a small speaker image file the given recording UUID.
+
+@method getSmallSpeakerImageUrl
+@param {string} uuid UUID of a commentary.
+@return {string} URL for a small speaker image file.
+*/
+ldc.aikuma.AikumaFolder.prototype.getSmallSpeakerImageUrl = function(uuid) {
+	if (this.urls.hasOwnProperty(uuid))
+		return this.urls[uuid]['small.jpg'];
+}
+
+function read_text_file(file, callback) {
+	var reader = new FileReader;
+	reader.onload = function() {
+		callback(this.result);
+	};
+	reader.readAsText(file);
 }
 
 })();
