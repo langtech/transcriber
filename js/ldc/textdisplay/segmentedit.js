@@ -36,7 +36,7 @@ ldc.textdisplay.SegmentEdit = function(rid, data) {
 			style: 'display: table-cell'
 		}, '\u2022\u00a0\u00a0');
 		var text = goog.dom.createDom('div', {
-			class: UI_TEXT_CLASS,
+			'class': UI_TEXT_CLASS,
 			contentEditable: 'true',
 			style: 'display: table-cell; width: 100%'
 		}, data['transcript']);
@@ -44,7 +44,7 @@ ldc.textdisplay.SegmentEdit = function(rid, data) {
 			style: 'display: table-row'
 		}, bullet, text);
 		dom = goog.dom.createDom('div', {
-			class: UI_CLASS,
+			'class': UI_CLASS,
 			id: html_rid
 		}, wrapper);
 		text.style.backgroundColor = this.ui_style.text_bg_color;

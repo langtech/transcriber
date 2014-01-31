@@ -33,7 +33,7 @@ ldc.aikuma.AikumaSegment = function(rid, data) {
 			style: 'display: table-cell'
 		}, '\u2022\u00a0\u00a0');
 		var text = goog.dom.createDom('div', {
-			class: UI_TEXT_CLASS,
+			'class': UI_TEXT_CLASS,
 			contentEditable: 'true',
 			style: 'display: table-cell; width: 100%'
 		}, data['transcript']);
@@ -45,7 +45,7 @@ ldc.aikuma.AikumaSegment = function(rid, data) {
 			style: 'display: table-cell'
 		});
 		var trans = goog.dom.createDom('div', {
-			class: UI_TEXT_CLASS,
+			'class': UI_TEXT_CLASS,
 			contentEditable: 'true',
 			style: 'display: table-cell; width: 100%'
 		}, data['translation']);
@@ -54,7 +54,7 @@ ldc.aikuma.AikumaSegment = function(rid, data) {
 		}, empty, trans);
 
 		dom = goog.dom.createDom('div', {
-			class: UI_CLASS,
+			'class': UI_CLASS,
 			id: html_rid
 		}, wrapper1, wrapper2);
 		

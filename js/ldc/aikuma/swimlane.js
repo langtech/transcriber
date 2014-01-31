@@ -138,7 +138,7 @@ ldc.aikuma.SwimLane.prototype.render_segment_ = function(beg, dur) {
 		a = Math.round(a);
 		b = Math.round(b);
 
-		var div = goog.dom.createDom('div', {class:'aikuma-swimlane-segment'});
+		var div = goog.dom.createDom('div', {'class':'aikuma-swimlane-segment'});
 		goog.dom.appendChild(this.html, div);
 		div.style.position = 'absolute';
 		div.style.left = a + 'px';

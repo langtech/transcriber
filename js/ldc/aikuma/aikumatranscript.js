@@ -76,8 +76,6 @@ ldc.aikuma.AikumaTranscript.toBlob = function(table, meta) {
 	});
 	rows.push('');
 	return new Blob([rows.join('\n')], {type: "text/plain;charset=utf-8"});
-	var filename = $('#save-file-input').val();
-	saveAs(blob, filename);
 }
 
 })();

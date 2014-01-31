@@ -63,7 +63,7 @@ is expected to have certain fields described below.
   - swimlane
 */
 ldc.aikuma.SwimLaneStack.prototype.setTable = function(table) {
-	if (table == null);
+	if (table == null)
 		return;
 
 	this.table = table;
