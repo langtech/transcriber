@@ -5,4 +5,28 @@ app.use('/transcriber', express.static(__dirname));
 if (process.argv.length >= 3)
     app.use('/transcriber/test/data/aikuma', express.static(process.argv[2]));
 
+app.get('/index.json', function(req, res, next) {
+	res.sendfile('test/data/aikuma/index.json');
+});
+
+app.get('/recording/:uuid', function(req, res, next) {
+	res.sendfile('test/data/aikuma/recordings/' + req.params.uuid + '.wav');
+});
+
+app.get('/recording/:uuid/mapfile', function(req, res, next) {
+	res.sendfile('test/data/aikuma/recordings/' + req.params.uuid + '.map');
+});
+
+app.get('/recording/:uuid/shapefile', function(req, res, next) {
+	res.sendfile('test/data/aikuma/recordings/' + req.params.uuid + '.shape');
+});
+
+app.get('/speaker/:uuid/image', function(req, res, next) {
+	res.sendfile('test/data/aikuma/images/' + req.params.uuid + '.jpg');
+});
+
+app.get('/speaker/:uuid/smallimage', function(req, res, next) {
+	res.sendfile('test/data/aikuma/images/' + req.params.uuid + '.small.jpg');
+});
+
 app.listen(3000);

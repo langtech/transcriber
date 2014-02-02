@@ -7,6 +7,7 @@
 */
 goog.provide('ldc.aikuma.AikumaFolder');
 
+
 /**
 Aikuma data directory reader. Only works with Chrome browser.
 
@@ -112,7 +113,8 @@ ldc.aikuma.AikumaFolder.prototype.loadWebIndex = function(index) {
 
 	for (var uuid in index.commentaries) {
 		var obj = index.commentaries[uuid];
-		if (this.org2comm.hasOwnProperty(obj.originalUUID))
+		ensure_backward_compatibility(obj);
+		if (!this.org2comm.hasOwnProperty(obj.originalUUID))
 			this.org2comm[obj.originalUUID] = {};
 		this.org2comm[obj.originalUUID][obj.uuid] = 1;
 		this.urls[uuid] = {
@@ -123,6 +125,7 @@ ldc.aikuma.AikumaFolder.prototype.loadWebIndex = function(index) {
 	}
 
 	for (var uuid in index.originals) {
+		ensure_backward_compatibility(index.originals[uuid]);
 		this.urls[uuid] = {
 			wav: '/recording/' + uuid,
 			map: '/recording/' + uuid + '/mapfile',
@@ -154,13 +157,6 @@ ldc.aikuma.AikumaFolder.prototype.loadStaticWebIndex = function(index, baseurl) 
 	this.speakers = index.speakers;
 	this.urls = {};
 	this.org2comm = {};
-
-	// obj is a recording json
-	function ensure_backward_compatibility(obj) {
-		obj['name'] = obj['recording_name'];
-		if (!obj.hasOwnProperty('originalUUID'))
-			obj['originalUUID'] = obj['original_uuid'];
-	}
 
 	for (var uuid in index.commentaries) {
 		var obj = index.commentaries[uuid];
@@ -292,6 +288,27 @@ ldc.aikuma.AikumaFolder.prototype.getSmallSpeakerImageUrl = function(uuid) {
 		return this.urls[uuid]['small.jpg'];
 }
 
+/**
+Returns speakers UUIDs given recording UUID.
+
+@method getSpeakersUUIDs
+@param {string} uuid UUID of a recording.
+@return {array} Array of speaker UUIDs.
+*/
+ldc.aikuma.AikumaFolder.prototype.getSpeakersUUIDs = function(uuid) {
+	var info = null;
+	if (this.originals.hasOwnProperty(uuid))
+		info = this.originals[uuid];
+	else if (this.commentaries.hasOwnProperty(uuid))
+		info = this.commentaries[uuid];
+	else
+		return null;
+	if (info.hasOwnProperty('speakersUUIDs'))
+		return info.speakersUUIDs;
+	else
+		return [info.creator_uuid];
+}
+
 function read_text_file(file, callback) {
 	var reader = new FileReader;
 	reader.onload = function() {
@@ -299,5 +316,14 @@ function read_text_file(file, callback) {
 	};
 	reader.readAsText(file);
 }
+
+// obj is a recording json
+function ensure_backward_compatibility(obj) {
+	if (obj.hasOwnProperty('recording_name'))
+		obj['name'] = obj['recording_name'];
+	if (!obj.hasOwnProperty('originalUUID'))
+		obj['originalUUID'] = obj['original_uuid'];
+}
+
 
 })();

@@ -597,7 +597,6 @@ jQuery(function($) {
 		$list[0].innerHTML = '';
 
 		var originals = aikuma.getOriginals();
-		console.log(originals);
 		Object.keys(originals).sort(function(a,b) {
 			var s = originals[a].name.toLowerCase();
 			var t = originals[b].name.toLowerCase();
@@ -790,15 +789,12 @@ jQuery(function($) {
 			.then(function(data) {
 				var sl = swimlanes.add(data);
 				// TODO: should be able to support multiple speakers
-				var spkruuid = aikuma.getRecordingInfo(rspkuuid).speakerUUIDs;
-				if (typeof spkruuid == 'array')
-					spkruuid = spkruuid[0];
-				else
-					// for backward compatibility
-					spkruuid = aikuma.getRecordingInfo(rspkuuid).creator_uuid;
-				var image_url = aikuma.getSmallSpeakerImageUrl(spkruuid);
+				var spkruuids = aikuma.getSpeakersUUIDs(rspkuuid);
+				if (spkruuids != null) {
+					var image_url = aikuma.getSmallSpeakerImageUrl(spkruuids[0]);
+					add_user_image(image_url, sl.id);
+				}
 				var audio_url = aikuma.getRecordingUrl(rspkuuid);
-				add_user_image(image_url, sl.id);
 				add_respeaking_audio(audio_url, 'wav', sl.id);
 			})
 			.fail(handle_error);
