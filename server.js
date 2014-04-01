@@ -10,7 +10,7 @@ app.get('/index.json', function(req, res, next) {
 });
 
 app.get('/recording/:uuid', function(req, res, next) {
-	res.sendfile('test/data/aikuma/recordings/' + req.params.uuid + '.wav');
+	res.sendfile('test/data/aikuma/recordings/' + req.params.uuid + '.ogg');
 });
 
 app.get('/recording/:uuid/mapfile', function(req, res, next) {
