@@ -166,7 +166,7 @@ ldc.aikuma.AikumaFolder.prototype.loadStaticWebIndex = function(index, baseurl) 
 			this.org2comm[orguuid] = {};
 		this.org2comm[orguuid][obj.uuid] = 1;
 		this.urls[uuid] = {
-			wav: baseurl + '/recordings/' + uuid + '.wav',
+			wav: baseurl + '/recordings/' + uuid + '.ogg',
 			map: baseurl + '/recordings/' + uuid + '.map',
 			shape: baseurl + '/recordings/' + uuid + '.shape'
 		};
@@ -175,7 +175,7 @@ ldc.aikuma.AikumaFolder.prototype.loadStaticWebIndex = function(index, baseurl) 
 	for (var uuid in index.originals) {
 		ensure_backward_compatibility(index.originals[uuid]);
 		this.urls[uuid] = {
-			wav: baseurl + '/recordings/' + uuid + '.wav',
+			wav: baseurl + '/recordings/' + uuid + '.ogg',
 			map: baseurl + '/recordings/' + uuid + '.map',
 			shape: baseurl + '/recordings/' + uuid + '.shape'
 		};
