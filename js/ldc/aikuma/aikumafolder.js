@@ -1,3 +1,6 @@
+// TODO: Clean-up is needed. Especially, the variable names don't reflect
+// the changes in the directory structure anymore.
+
 (function() {
 
 /**
@@ -111,8 +114,16 @@ ldc.aikuma.AikumaFolder.prototype.loadWebIndex = function(index) {
 	this.urls = {};
 	this.org2comm = {};
 
+	var original_recordings = {};
+	for (var fileid in index.originals) {
+		var item_id = this.originals[fileid].recording;
+		original_recordings[item_id] = fileid;
+	}
+
 	for (var uuid in index.commentaries) {
 		var obj = index.commentaries[uuid];
+		obj.uuid = uuid;
+		obj.originalUUID = original_recordings[obj.recording];
 		ensure_backward_compatibility(obj);
 		if (!this.org2comm.hasOwnProperty(obj.originalUUID))
 			this.org2comm[obj.originalUUID] = {};
@@ -125,6 +136,7 @@ ldc.aikuma.AikumaFolder.prototype.loadWebIndex = function(index) {
 	}
 
 	for (var uuid in index.originals) {
+		index.originals[uuid].uuid = uuid;
 		ensure_backward_compatibility(index.originals[uuid]);
 		this.urls[uuid] = {
 			wav: '/recording/' + uuid,
@@ -134,6 +146,7 @@ ldc.aikuma.AikumaFolder.prototype.loadWebIndex = function(index) {
 	}
 
 	for (var uuid in index.speakers) {
+		index.speakers[uuid].uuid = uuid;
 		this.urls[uuid] = {
 			jpg: '/speaker/' + uuid + '/image',
 			'small.jpg': '/speaker/' + uuid + '/smallimage'
@@ -305,8 +318,27 @@ ldc.aikuma.AikumaFolder.prototype.getSpeakersUUIDs = function(uuid) {
 		return null;
 	if (info.hasOwnProperty('speakersUUIDs'))
 		return info.speakersUUIDs;
+	else if (info.hasOwnProperty('people'))
+		return info.people;
 	else
 		return [info.creator_uuid];
+}
+
+/**
+Get list of people.
+
+@method getPeople
+@return {array} Array of registered user IDs.
+*/
+ldc.aikuma.AikumaFolder.prototype.getPeople = function() {
+	var res = [];
+	for (var user_id in this.speakers) {
+		if (this.speakers.hasOwnProperty(user_id)) {
+			var person = this.speakers[user_id];
+			res.push( [user_id, person.name] )
+		}
+	}
+	return res;
 }
 
 function read_text_file(file, callback) {

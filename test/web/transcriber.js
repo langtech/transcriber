@@ -481,31 +481,31 @@ jQuery(function($) {
 		open_audio_group(uuid);
 	});
 
-	// Save Transcription Menu
+	// Download Transcription Menu
 
-	$('#save-file-dialog').on('shown.bs.modal', function() {
+	$('#download-file-dialog').on('shown.bs.modal', function() {
 	});
 
-	$('#save-file-btn').on('click', function(e) {
+	$('#download-file-btn').on('click', function(e) {
 		var uuid = cur_uuid == null ? cur_file_meta.original_uuid : cur_uuid;
 		var blob = ldc.aikuma.AikumaTranscript.toBlob(table, {
 			original_uuid: uuid
 		});
-		var filename = $('#save-file-input').val();
+		var filename = $('#download-file-input').val();
 		saveAs(blob, filename);
 	});
 
-	// Save ELAN menu
+	// Download ELAN menu
 
-	$('#save-elan-dialog').on('shown.bs.modal', function() {
+	$('#download-elan-dialog').on('shown.bs.modal', function() {
 	});
 
-	$('#save-elan-btn').on('click', function(e) {
+	$('#download-elan-btn').on('click', function(e) {
 		var uuid = cur_uuid == null ? cur_file_meta.original_uuid : cur_uuid;
 		var blob = ldc.aikuma.ElanTranscript.toBlob(table, {
 			original_uuid: uuid
 		});
-		var filename = $('#save-elan-input').val();
+		var filename = $('#download-elan-input').val();
 		saveAs(blob, filename);
 	});
 	
