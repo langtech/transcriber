@@ -1056,37 +1056,46 @@ jQuery(function($) {
 				// Find a span to split.
 				var rid;
 
-				rid = ldc.datamodel.Table.getNewRid();
-				ebus.queue(new ldc.datamodel.TableAddRowEvent(main, rid, {
-					offset: gap_beg,
-					length: t - gap_beg,
-					waveform:get_waveform_id(),
-					speaker: 'speaker'
-				}));
+				if (t > gap_beg) {
+					rid = ldc.datamodel.Table.getNewRid();
+					ebus.queue(new ldc.datamodel.TableAddRowEvent(main, rid, {
+						offset: gap_beg,
+						length: t - gap_beg,
+						waveform:get_waveform_id(),
+						speaker: 'speaker'
+					}));
+				}
 
-				rid = ldc.datamodel.Table.getNewRid();
-				ebus.queue(new ldc.datamodel.TableAddRowEvent(main, rid, {
-					offset: t,
-					length: gap_end - t,
-					waveform: get_waveform_id(),
-					speaker: 'speaker'
-				}));
+				if (t < gap_end) {
+					rid = ldc.datamodel.Table.getNewRid();
+					ebus.queue(new ldc.datamodel.TableAddRowEvent(main, rid, {
+						offset: t,
+						length: gap_end - t,
+						waveform: get_waveform_id(),
+						speaker: 'speaker'
+					}));
+				}
 			}
 			else if (row_to_split != null) {
 				var beg = row_to_split.value('offset');
 				var end = beg + row_to_split.value('length');
 				var new_length = t - beg;
-				var update = {length:new_length};
-				var e = new ldc.datamodel.TableUpdateRowEvent(main, row_to_split.rid(), update);
-				ebus.queue(e);
-				var new_rid = ldc.datamodel.Table.getNewRid();
-				ebus.queue(new ldc.datamodel.TableAddRowEvent(main, new_rid, {
-					offset: t,
-					length: end - t,
-					waveform: get_waveform_id(),
-					speaker: 'speaker'
-				}));
-				select_segment(new_rid);
+				if (new_length > 0) {
+					var update = {length:new_length};
+					var e = new ldc.datamodel.TableUpdateRowEvent(
+						main, row_to_split.rid(), update);
+					ebus.queue(e);
+				}
+				if (end > t) {
+					var new_rid = ldc.datamodel.Table.getNewRid();
+					ebus.queue(new ldc.datamodel.TableAddRowEvent(main, new_rid, {
+						offset: t,
+						length: end - t,
+						waveform: get_waveform_id(),
+						speaker: 'speaker'
+					}));
+					select_segment(new_rid);
+				}
 			}
 		}
 		//console.log('key code: ' + e.keyCode);

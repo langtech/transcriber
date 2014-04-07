@@ -107,7 +107,6 @@ ldc.aikuma.SwimLaneStack.prototype.handleRowAdded = function(param) {
 	var sl = this.swimlanes[speaker];
 	if (!sl)
 		sl = this.new_swimlane_for_speaker_(speaker);
-	sl.handleRowAdded(param);
 }
 
 
