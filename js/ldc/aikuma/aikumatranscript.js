@@ -60,7 +60,7 @@ Turn a table object into Aikuma transcription format.
 */
 ldc.aikuma.AikumaTranscript.toBlob = function(table, meta) {
 	var rows = [
-		';; user someuser',
+		';; user ' + (meta.user==null ? 'someuser' : meta.user),
 		';; original_uuid ' + meta.original_uuid
 	];
 	table.forEach(function(row) {

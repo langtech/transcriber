@@ -22,6 +22,7 @@ ldc.aikuma.AikumaFolder = function() {
 	this.commentaries = {};
 	this.org2comm = {};  // list of commentary uuids by original uuid
 	this.speakers = {};
+	this.transcripts = {};
 	this.urls = {};  // keys are a file extension, values are File object
 }
 
@@ -44,8 +45,10 @@ ldc.aikuma.AikumaFolder.prototype.loadFolder = function(filelist, progress) {
 	this.originals = {};
 	this.commentaries = {};
 	this.speakers = {};
+	this.transcripts = {};
 	this.urls = {};
 	this.org2comm = {};
+	this.org2trs = {};
 
 	for (var i=0, file; file = filelist[i]; ++i) {
 
@@ -111,8 +114,10 @@ ldc.aikuma.AikumaFolder.prototype.loadWebIndex = function(index) {
 	this.originals = index.originals;
 	this.commentaries = index.commentaries;
 	this.speakers = index.speakers;
+	this.transcripts = index.transcripts;
 	this.urls = {};
 	this.org2comm = {};
+	this.org2trs = {};
 
 	var original_recordings = {};
 	for (var fileid in index.originals) {
@@ -151,6 +156,17 @@ ldc.aikuma.AikumaFolder.prototype.loadWebIndex = function(index) {
 			jpg: '/speaker/' + uuid + '/image',
 			'small.jpg': '/speaker/' + uuid + '/smallimage'
 		};
+	}
+
+	for (var trs_id in index.transcripts) {
+		var trs_meta = index.transcripts[trs_id];
+		var org_file_id = original_recordings[trs_meta.recording];
+		if (!this.org2trs.hasOwnProperty(org_file_id))
+			this.org2trs[org_file_id] = {};
+		this.org2trs[org_file_id][trs_id] = 1;
+		this.urls[trs_id] = {
+			txt: '/transcript/' + trs_id
+		}
 	}
 }
 
@@ -242,6 +258,21 @@ ldc.aikuma.AikumaFolder.prototype.getRecordingInfo = function(uuid) {
 }
 
 /**
+Get group ID.
+
+@method getGroupID
+@param {string} uuid UUID of a recording or transcript.
+@return {string} ID of the recording group.
+*/
+ldc.aikuma.AikumaFolder.prototype.getGroupID = function(uuid) {
+	if (this.originals.hasOwnProperty(uuid) ||
+		this.commentaries.hasOwnProperty(uuid) ||
+		this.transcripts.hasOwnProperty(uuid)) {
+		return uuid.split('-')[0];
+	}
+}
+
+/**
 Returns UUIDs of commentaries.
 
 @method getCommentaryUUIDs
@@ -251,6 +282,44 @@ Returns UUIDs of commentaries.
 ldc.aikuma.AikumaFolder.prototype.getCommentaryUUIDs = function(uuid) {
 	var org = this.org2comm[uuid];
 	return org == null ? null :	Object.getOwnPropertyNames(this.org2comm[uuid]);
+}
+
+/**
+Returns UUIDs of transcripts.
+
+@method getTranscriptUUIDs
+@param {string} uuid UUID of the original recording.
+@return {array} List of UUIDs.
+*/
+ldc.aikuma.AikumaFolder.prototype.getTranscriptUUIDs = function(uuid) {
+	var org = this.org2trs[uuid];
+	return org == null ? null : Object.getOwnPropertyNames(this.org2trs[uuid]);
+}
+
+/**
+Get person ID of transcript.
+
+@method getTranscriptCreatorID
+@param {string} uuid UUID of the transcript.
+@return {string} uuid User ID who created the transcript.
+*/
+ldc.aikuma.AikumaFolder.prototype.getTranscriptCreatorID = function(uuid) {
+	if (this.transcripts.hasOwnProperty(uuid))
+		return this.transcripts[uuid].transcriber;
+	else
+		return null;
+}
+
+/**
+Returns the URL for a transcript file given a recording UUID.
+
+@method getTranscriptUrl
+@param {string} uuid UUID of a transcript.
+@return {string} URL for a transcript file.
+*/
+ldc.aikuma.AikumaFolder.prototype.getTranscriptUrl = function(uuid) {
+	if (this.urls.hasOwnProperty(uuid))
+		return this.urls[uuid].txt;
 }
 
 /**
@@ -328,14 +397,14 @@ ldc.aikuma.AikumaFolder.prototype.getSpeakersUUIDs = function(uuid) {
 Get list of people.
 
 @method getPeople
-@return {array} Array of registered user IDs.
+@return {array} Array of object with user id and name.
 */
 ldc.aikuma.AikumaFolder.prototype.getPeople = function() {
 	var res = [];
 	for (var user_id in this.speakers) {
 		if (this.speakers.hasOwnProperty(user_id)) {
 			var person = this.speakers[user_id];
-			res.push( [user_id, person.name] )
+			res.push( {id: user_id, name: person.name} )
 		}
 	}
 	return res;

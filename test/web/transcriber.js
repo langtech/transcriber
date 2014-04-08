@@ -27,6 +27,9 @@ jQuery(function($) {
 	var cur_file_meta;  // metadata of currently loaded transcript
 	var cur_audio;  // uuid of currently loaded original audio
 	
+	var cur_trs_uuid;  // currently loaded transcript
+	var cur_trs_user;  // currently identified user
+
 	var ebus = new ldc.event.EventBus;
 
 	var table = new ldc.datamodel.Table([
@@ -405,7 +408,11 @@ jQuery(function($) {
 	});
 
 	// New Transcript menu
-	$('#new-transcript-menu').on('click', table_clear_transcript);
+	$('#new-transcript-menu').on('click', function(e) {
+		$('#transcript-id').text('');
+		table_clear_transcript();
+		textedit.setTable(table);
+	});
 
 	// Open Transcript menu
 
@@ -445,7 +452,6 @@ jQuery(function($) {
 		parse_transcription_file(file, ldc.aikuma.ElanTranscript.parse)
 		.then(load_transcript)
 		.fail(handle_error);
-
 	});
 
 	// Open Folder menu
@@ -479,6 +485,57 @@ jQuery(function($) {
 		var $option = $('#recording-list option:selected').first();
 		var uuid = $option.attr('value');
 		open_audio_group(uuid);
+
+		set_transcript_list(uuid);
+	});
+
+	$('#open-selected-transcript').on('click', function(e) {
+		var $option = $('#transcript-list option:selected').first();
+		var uuid = $option.attr('value');
+		cur_trs_uuid = uuid;
+		if (uuid == null) {
+			// create new transcript
+			$('#new-transcript-menu').click();
+		}
+		else {
+			$('#transcript-id').text(uuid);
+			var trs_url = aikuma.getTranscriptUrl(uuid);
+			download(trs_url)
+			.then(function(text) {
+				load_transcript(ldc.aikuma.AikumaTranscript.parse(text));
+			})
+			.fail(handle_error);
+		}
+	});
+
+	// Save Transcription Menu
+
+	$('#save-file-dialog').on('shown.bs.modal', function() {
+		if (transcript_segments().length <= 0) {
+			$('#save-file-dialog').modal('hide');
+			warn("Nothing to save.");
+		}
+		else if (cur_trs_uuid == null) {
+			// New -- no dialog needed
+			$('#save-file-dialog').modal('hide');
+			$('#save-file-btn-yes').click();
+		}
+		else {
+			var creator = aikuma.getTranscriptCreatorID(cur_trs_uuid);
+			if (creator == cur_trs_user) {
+				// Owner -- no dialog needed
+				$('#save-file-dialog').modal('hide');
+				save_transcript()
+				.fail(handle_error);
+			}
+		}
+	});
+
+
+	$('#save-file-btn-yes').on('click', function(e) {
+		create_new_transcript()
+		.then(save_transcript)
+		.fail(handle_error);
 	});
 
 	// Download Transcription Menu
@@ -528,11 +585,20 @@ jQuery(function($) {
 		download('/index.json')
 		.then(function(data) {
 			aikuma.loadWebIndex(JSON.parse(data));
+			set_transcriber_list();
+			$('#transcriber-id-dialog').modal();
 			set_recording_list();
 		})
 		.fail(handle_error);
 	});
 
+	$('#transcriber-select-btn').on('click', function(e) {
+		var $option = $('#transcriber-list option:selected').first();
+		var person_id = $option.attr('value');
+		$('#person-name').text($option.text());
+		$('#person-id').text(person_id);
+		cur_trs_user = person_id;
+	});
 
 	// initialize event bus connections
 	ebus.connect(ldc.waveform.WaveformCursorEvent, {
@@ -587,6 +653,45 @@ jQuery(function($) {
 	textedit.setTable(table);
 
 
+
+	/**
+	Populate the transcriber list dropdown.
+	@method set_transcriber_list
+	*/
+	function set_transcriber_list() {
+		var $list = $('#transcriber-list');
+		$list[0].innerHTML = '';
+
+		var people = aikuma.getPeople();
+		people.sort(function(a, b) {
+			var s = a.name.toLowerCase();
+			var t = b.name.toLowerCase();
+			return s < t ? -1 : (s > t ? 1 : 0);
+		}).forEach(function(person) {
+			var el = $('<option>' + person.name + '</option>').appendTo($list);
+			el.attr('value', person.id);
+		});
+	}
+
+	/**
+	Populate the transcript list.
+	@method set_transcript_list
+	@param {string} uuid UUID of the original recording.
+	*/
+	function set_transcript_list(uuid) {
+		var $list = $('#transcript-list');
+		$list[0].innerHTML = '';
+		var trs_ids = aikuma.getTranscriptUUIDs(uuid);
+		if (trs_ids == null)
+			return;
+		$('<option>Create new transcript</option>').appendTo($list);
+		trs_ids.sort().forEach(function(x) {
+			var el = $('<option>' + x + '</option>').appendTo($list);
+			el.attr('value', x);
+			if (x == cur_trs_uuid)
+				el.attr('selected', true);
+		});
+	}
 
 	/**
 	Re-populate the recording list dropdown.
@@ -742,6 +847,7 @@ jQuery(function($) {
 		$('#swimlane-containers')[0].innerHTML = '';
 
 		cur_uuid = uuid;
+		$('#audio-id').text(uuid);
 
 		var deferred = Q.defer();
 		var url = aikuma.getRecordingUrl(uuid);
@@ -922,6 +1028,18 @@ jQuery(function($) {
 		this.stack = (new Error(msg)).stack;
 	}
 
+	function ServerError(msg) {
+		this.name = 'ServerError';
+		this.message = msg;
+		this.stack = (new Error(msg)).stack;
+	}
+
+	function RuntimeError(msg) {
+		this.name = 'RuntimeError';
+		this.message = msg;
+		this.stack = (new Error(msg)).stack;
+	}
+
 	/**
 	 * @method download
 	 * @param {String} url
@@ -938,7 +1056,7 @@ jQuery(function($) {
 			else
 				deferred.resolve(type == 'array_buffer' ? this.response : this.responseText);
 		}
-		xhr.onerror = function() {
+		xhr.onerror = function(e) {
 			deferred.reject(e);
 		}
 		xhr.open('get', url, true);
@@ -948,6 +1066,86 @@ jQuery(function($) {
 		return deferred.promise;
 	}
 
+
+	/**
+	@method create_new_transcript
+	@return {Promise} A promise for the new transcript id.
+	*/
+	function create_new_transcript() {
+		var deferred = Q.defer();
+		if (cur_uuid == null) {
+			deferred.reject(new RuntimeError('Load audio first'));
+		}
+		else if (cur_trs_user == null) {
+			deferred.reject(new RuntimeError('User is not identified'));
+		}
+		else {
+			var group_id = aikuma.getGroupID(cur_uuid);
+			// TODO: This should be factored out as a AikumaFolder method.
+			var xid = group_id + '-' + cur_trs_user + '-transcript-0000';
+			var url = '/transcript/' + xid + '/new_id';
+			var xhr = new XMLHttpRequest;
+			xhr.onload = function(e) {
+				if (xhr.status == 200) {
+					cur_trs_uuid = this.responseText;
+					$('#transcript-id').text(cur_trs_uuid);
+					deferred.resolve(this.responseText);
+					download('/index.json')
+					.then(function(data) {
+						aikuma.loadWebIndex(JSON.parse(data));
+						set_transcript_list(cur_uuid);
+					})
+					.fail(handle_error);
+				}
+				else
+					deferred.reject(new RuntimeError('Failed to create trs ID'));
+			}
+			xhr.onerror = function(e) {
+				deferred.reject(e);
+			}
+			xhr.open('get', url, true);
+			xhr.send();
+		}
+		return deferred.promise;
+	}
+
+	/**
+	@method save_transcript
+	@return {Promide} A promise
+	*/
+	function save_transcript() {
+		var deferred = Q.defer();
+		if (cur_uuid == null) {
+			deferred.reject(new RuntimeError('Load audio first'));
+		}
+		else if (cur_trs_uuid == null) {
+			deferred.reject(new RuntimeError('Create a transcript on server first'));
+		}
+		else if (cur_trs_user == null) {
+			deferred.reject(new RuntimeError('User is not identified'));			
+		}
+		else {
+			var blob = ldc.aikuma.AikumaTranscript.toBlob(table, {
+				user: cur_trs_user,
+				original_uuid: cur_uuid
+			});
+			var xhr = new XMLHttpRequest;
+			xhr.onload = function(e) {
+				if (xhr.status == 200)
+					deferred.resolve(this.responseText);
+				else if (xhr.status == 500)
+					deferred.reject(new ServerError('Failed to save transcript'));
+				else
+					deferred.reject(new RuntimeError('Failed to save transcript'));
+			}
+			xhr.onerror = function(e) {
+				deferred.reject(e);
+			}
+			xhr.open('put', '/transcript/' + cur_trs_uuid, true);
+			xhr.send(blob);
+		}
+		return deferred.promise;
+	}
 
 	function handle_error(e) {
 		if (e.stack)
