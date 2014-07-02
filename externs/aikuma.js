@@ -1,0 +1,13 @@
+window['aikuma-externs'] = {};
+window['aikuma-externs']['transcript'] = {};
+window['aikuma-externs']['transcript']['meta'] = {};
+window['aikuma-externs']['transcript']['meta']['original_uuid'] = 0;
+window['aikuma-externs']['reapeaking-group'] = {};
+window['aikuma-externs']['reapeaking-group']['original'] = '';
+window['aikuma-externs']['reapeaking-group']['respeakings'] = [];
+window['aikuma-externs']['aikuma-json']['creator_uuid'] = '';
+window['aikuma-externs']['aikuma-json']['date_string'] = '';
+window['aikuma-externs']['aikuma-json']['languages'] = []; 
+window['aikuma-externs']['aikuma-json']['original_uuid'] = ''; 
+window['aikuma-externs']['aikuma-json']['recording_name'] = '';
+window['aikuma-externs']['aikuma-json']['uuid'] = '';

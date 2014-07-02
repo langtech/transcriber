@@ -1,0 +1,12 @@
+{
+  "name": "transcriber",
+  "version": "0.0.0",
+  "main": "test/web/transcriber.html",
+  "dependencies": {
+    "bootstrap": "*",
+    "jquery": "*",
+    "q": "*",
+    "FileSaver": "*",
+    "angular": "*"
+  }
+}

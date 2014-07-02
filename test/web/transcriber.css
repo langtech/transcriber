@@ -1,0 +1,36 @@
+.aikuma-swimlane-segment {
+	height: 12px;
+	border-style: solid;
+	border-width: 1px;
+	border-color: #cccccc;
+	background-color: #e6e6e6;
+}
+
+.aikuma-swimlane-segment-left {
+	border-right-style: none;
+}
+
+.aikuma-swimlane-segment-right {
+	border-left-style: none;
+}
+
+.aikuma-swimlane-selected-segment {
+	background-color: rgba(255,0,0,0.4);
+}
+
+#swimlanes {
+	overflow-y: auto;
+}
+
+.swimlane {
+	height: 15px;
+}
+
+#textpanel {
+	height: 300px;
+	overflow-y: auto;
+}
+
+#speaker-swimlanes div {
+	height: 10px;
+}
