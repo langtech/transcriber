@@ -1,0 +1,51 @@
+<html>
+    <head>
+        <title>
+            Rich waveform with audio playback
+        </title>
+        <link href="main.css" rel="stylesheet" media="screen">
+        <script src="../../js/closure-library/closure/goog/base.js"></script>
+        <script src="../../js/ldc/deps.js"></script>
+
+        <script src="../../bower_components/q/q.js"></script>
+        <script src="../utils.js"></script>
+        <script src="main.js"></script>
+    </head>
+    <body>
+        <p>This program puts ldc.waveform.RichWaveform and
+            ldc.mediaplayer.AudioPlayer together, and shows how to
+            make them interact.</p>
+        <hr>
+
+        <!-- let user select a shape file from the disk -->
+        <form>Shape file: <input id="shape-input" type="file"></form>
+        <form>Audio file: <input id="audio-input" type="file"></form>
+
+        <!-- place holder for waveform -->
+        <div id="waveform-div">
+            <canvas id="waveform-canvas"></canvas>
+        </div>
+
+        <!-- waveform manipulating buttons -->
+        <div>
+            <button type="button" id="back-btn">Move 1 second back</button>
+            <button type="button" id="forward-btn">Move 1 second forward</button>
+            <button type="button" id="zoomin-btn">Zoom in</button>
+            <button type="button" id="zoomout-btn">Zoom out</button>
+        </div>
+
+        <!-- audio playback buttons -->
+        <div>
+            <button type="button" id="play-btn">Play</button>
+            <button type="button" id="pause-btn">Pause</button>
+            <button type="button" id="resume-btn">Resume</button>
+        </div>
+
+
+        <!-- waveform information display -->
+        <div><span>cursor position: <span id="cursor-pos"></span></div>
+
+        <!-- place holder for error messages and notifications -->
+        <div id="message-board"></div>
+    </body>
+</html>

@@ -1,8 +1,6 @@
 // TODO: Clean-up is needed. Especially, the variable names don't reflect
 // the changes in the directory structure anymore.
 
-(function() {
-
 /**
 @module ldc
 @submodule aikuma
@@ -10,6 +8,7 @@
 */
 goog.provide('ldc.aikuma.AikumaFolder');
 
+(function() {
 
 /**
 Aikuma data directory reader. Only works with Chrome browser.

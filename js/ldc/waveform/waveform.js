@@ -1,5 +1,3 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule waveform
@@ -8,6 +6,8 @@
 goog.provide('ldc.waveform.Waveform');
 goog.require('goog.array');
 goog.require('goog.dom');
+
+(function() {
 
 /**
  * A class for displaying WaveformBuffer on a canvas. After instantiation,

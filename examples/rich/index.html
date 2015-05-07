@@ -1,0 +1,44 @@
+<html>
+    <head>
+        <title>
+            Rich waveform
+        </title>
+        <link href="main.css" rel="stylesheet" media="screen">
+        <script src="../../js/closure-library/closure/goog/base.js"></script>
+        <script src="../../js/ldc/deps.js"></script>
+
+        <script src="../../bower_components/q/q.js"></script>
+        <script src="../utils.js"></script>
+        <script src="main.js"></script>
+    </head>
+    <body>
+        <p>This program demonstrates ldc.waveform.RichWaveform. It's "rich"
+            because it has advanced features over the basic
+            <a href="../simple/index.html">ldc.waveform.Waveform</a> class.
+            For instance, it has a hairline
+            cursor, and also user can select a region over the waveform.</p>
+        <hr>
+
+        <!-- let user select a shape file from the disk -->
+        <form name="shape-file-form">
+            Shape file: <input id="file-input" type="file">
+        </form>
+
+        <!-- place holder for waveform -->
+        <div id="waveform-div">
+            <canvas id="waveform-canvas"></canvas>
+        </div>
+
+        <!-- waveform manipulating buttons -->
+        <button type="button" id="back-btn">Move 1 second back</button>
+        <button type="button" id="forward-btn">Move 1 second forward</button>
+        <button type="button" id="zoomin-btn">Zoom in</button>
+        <button type="button" id="zoomout-btn">Zoom out</button>
+
+        <!-- waveform information display -->
+        <div><span>cursor position: <span id="cursor-pos"></span></div>
+
+        <!-- place holder for error messages and notifications -->
+        <div id="message-board"></div>
+    </body>
+</html>

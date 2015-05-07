@@ -1,11 +1,11 @@
-(function() {
-
 /**
 @module ldc
 @submodule event
 @namespace event
 */
 goog.provide('ldc.event.Signal');
+
+(function() {
 
 /**
 Signal is a object that emits a signal to subscribers.
@@ -23,10 +23,13 @@ Emits a signal.
 @param {object} p An object whose properties are the parameters of the signal.
 */
 ldc.event.Signal.prototype.emit = function(p) {
-	var p1 = p || {};
-	this.objs.forEach(function(obj,i) {
-		obj[this.slot_names[i]](p1);
-	}, this);
+    var p1 = p || {};
+    this.objs.forEach(function(obj,i) {
+        var handler_name = this.slot_names[i];
+        if (obj.hasOwnProperty(handler_name)) {
+            obj[handler_name](p1);
+        }
+    }, this);
 }
 
 /**

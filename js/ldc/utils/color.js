@@ -1,11 +1,11 @@
-(function() {
-
 /**
 @module ldc
 @submodule utils
 @namespace utils
 */
 goog.provide('ldc.utils.Color');
+
+(function() {
 
 /**
 An RGB color.

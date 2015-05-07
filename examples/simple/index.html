@@ -1,0 +1,35 @@
+<html>
+    <head>
+        <title>
+            Simple waveform
+        </title>
+        <link href="main.css" rel="stylesheet" media="screen">
+        <script src="../../js/closure-library/closure/goog/base.js"></script>
+        <script src="../../js/ldc/deps.js"></script>
+
+        <script src="../../bower_components/q/q.js"></script>
+        <script src="../utils.js"></script>
+        <script src="main.js"></script>
+    </head>
+    <body>
+        <p>This program shows how to use the ldc.waveform.Waveform class.</p>
+        <hr>
+
+        <!-- let user select a shape file from the disk -->
+        <form name="shape-file-form">
+            Shape file: <input id="file-input" type="file">
+        </form>
+
+        <!-- place holder for waveform -->
+        <div id="waveform-div">
+            <canvas id="waveform-canvas"></canvas>
+        </div>
+        <button type="button" id="back-btn">Move 1 second back</button>
+        <button type="button" id="forward-btn">Move 1 second forward</button>
+        <button type="button" id="zoomin-btn">Zoom in</button>
+        <button type="button" id="zoomout-btn">Zoom out</button>
+
+        <!-- place holder for error messages and notifications -->
+        <div id="message-board"></div>
+    </body>
+</html>

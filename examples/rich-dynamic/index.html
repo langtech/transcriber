@@ -1,0 +1,45 @@
+<html>
+    <head>
+        <title>
+            Rich waveform with dynamic waveform generation
+        </title>
+        <link href="main.css" rel="stylesheet" media="screen">
+        <script src="../../js/closure-library/closure/goog/base.js"></script>
+        <script src="../../js/ldc/deps.js"></script>
+
+        <script src="../../bower_components/q/q.js"></script>
+        <script src="../utils.js"></script>
+        <script src="main.js"></script>
+    </head>
+    <body>
+        <p>This program demonstrates how the waveform can be generated
+            on the fly directly from an audio file.</p>
+        <p>Be warned that the
+            process requires a lot of RAM and CPU. Depending on the size
+            of the audio, it may exhaust browser/system memory and crach
+            the browser.</p>
+        <hr>
+
+        <!-- let user select a shape file from the disk -->
+        <form name="shape-file-form">
+            Audio file: <input id="file-input" type="file">
+        </form>
+
+        <!-- place holder for waveform -->
+        <div id="waveform-div">
+            <canvas id="waveform-canvas"></canvas>
+        </div>
+
+        <!-- waveform manipulating buttons -->
+        <button type="button" id="back-btn">Move 1 second back</button>
+        <button type="button" id="forward-btn">Move 1 second forward</button>
+        <button type="button" id="zoomin-btn">Zoom in</button>
+        <button type="button" id="zoomout-btn">Zoom out</button>
+
+        <!-- waveform information display -->
+        <div><span>cursor position: <span id="cursor-pos"></span></div>
+
+        <!-- place holder for error messages and notifications -->
+        <div id="message-board"></div>
+    </body>
+</html>

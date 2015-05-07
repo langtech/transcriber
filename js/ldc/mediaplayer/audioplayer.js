@@ -1,11 +1,11 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule mediaplayer
  */
 goog.provide('ldc.mediaplayer.AudioPlayer');
 goog.require('ldc.event.Signal');
+
+(function() {
 
 /**
 @class AudioPlayer

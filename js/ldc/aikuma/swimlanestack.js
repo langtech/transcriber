@@ -1,5 +1,3 @@
-(function() {
-
 /**
 @module ldc
 @submodule aikuma
@@ -10,6 +8,8 @@ goog.provide('ldc.aikuma.SwimLaneStack');
 goog.require('ldc.datamodel.TableUpdateRowEvent');
 goog.require('ldc.datamodel.TableAddRowEvent');
 goog.require('ldc.datamodel.TableDeleteRowEvent');
+
+(function() {
 
 /**
 Container of {{#crossLink "aikuma.SwimLane"}}{{/crossLink}} objects. It

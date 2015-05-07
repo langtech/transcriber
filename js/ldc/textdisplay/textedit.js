@@ -1,5 +1,3 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule textdisplay
@@ -11,6 +9,8 @@ goog.require('ldc.event.Event');
 goog.require('ldc.waveform.WaveformSelectEvent');
 goog.require('goog.dom');
 goog.require('goog.events');
+
+(function() {
 
 /**
  * Displays Table object as a set of segmeng widgets. TextEdit requires the

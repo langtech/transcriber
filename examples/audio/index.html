@@ -1,0 +1,31 @@
+<html>
+    <head>
+        <title>
+            Audio playback
+        </title>
+        <link href="main.css" rel="stylesheet" media="screen">
+        <script src="../../js/closure-library/closure/goog/base.js"></script>
+        <script src="../../js/ldc/deps.js"></script>
+
+        <script src="../../bower_components/q/q.js"></script>
+        <script src="../utils.js"></script>
+        <script src="main.js"></script>
+    </head>
+    <body>
+        This program demonstrates ldc.mediaplayer.AudioPlayer class.
+        <hr>
+
+        <!-- let user select a shape file from the disk -->
+        <form>
+            Audio file: <input id="file-input" type="file">
+        </form>
+
+        <button type="button" id="btn1">Play 10 seconds from the beginning</button>
+        <button type="button" id="btn2">Play 10 seconds starting at 5 second</button>
+
+        <div><span>currently playing at: <span id="player-pos"></span></span></div>
+        
+        <!-- place holder for error messages and notifications -->
+        <div id="message-board"></div>
+    </body>
+</html>

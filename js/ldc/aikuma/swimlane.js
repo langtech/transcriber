@@ -1,5 +1,3 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule aikuma
@@ -14,6 +12,8 @@ goog.require('ldc.waveform.WaveformWindowEvent');
 goog.require('ldc.aikuma.SwimLaneRegionEvent');
 goog.require('goog.dom');
 goog.require('goog.events');
+
+(function() {
 
 /**
 Display for Aikuma respeaking segments.

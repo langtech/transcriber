@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "main": "test/web/transcriber.html",
   "dependencies": {
-    "bootstrap": "*",
-    "jquery": "*",
-    "q": "*",
-    "FileSaver": "*",
-    "angular": "*"
+    "bootstrap": "3.3.4",
+    "jquery": "2.1.4",
+    "q": "1.3.0",
+    "FileSaver": "239f3c427f",
+    "angular": "1.3.15"
   }
 }

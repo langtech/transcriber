@@ -12,6 +12,7 @@ Install dependencies first.
 npm install
 git submodule init
 git submodule update
+./node_module/.bin/bower install
 ```
 
 ### With HTTP server

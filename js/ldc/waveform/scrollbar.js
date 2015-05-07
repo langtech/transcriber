@@ -44,22 +44,21 @@ ldc.waveform.Scrollbar = function(waveformSet, element, ebus) {
 		ebus.connect(ldc.waveform.WaveformWindowEvent, this);
 	}
 
-	goog.cssom.addCssText(" \
-		.goog-slider-horizontal { \
-		  background-color: ThreeDFace; \
-		  position: relative; \
-		  overflow: hidden; \
-		  height: 15px; \
-		} \
-		\
-		.goog-slider-thumb { \
-		  background-color: ThreeDShadow; \
-		  position: absolute; \
-		  overflow: hidden; \
-		  top: 0; \
-		  height: 100%; \
-		} \
-	");
+	goog.cssom.addCssText(
+	    ".goog-slider-horizontal {" +
+	    "background-color: ThreeDFace;" +
+	    "position: relative;" +
+	    "overflow: hidden;" +
+	    "height: 15px;" +
+	    "}" +
+            ".goog-slider-thumb {" +
+	    "background-color: ThreeDShadow;" +
+	    "position: absolute;" +
+	    "overflow: hidden;" +
+	    "top: 0;" +
+	    "height: 100%;" +
+	    "}"
+	);
 
 	var w = this.wset.windowDuration() / this.wset.length() * this.element.clientWidth;
 	this.thumb.style.width = Math.round(Math.max(5,w)) + 'px';

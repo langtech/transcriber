@@ -1,11 +1,11 @@
-(function() {
-
 /**
 @module ldc
 @submodule aikuma
 @namespace aikuma
 */
 goog.provide('ldc.aikuma.ElanTranscript');
+
+(function() {
 
 /**
 Following assumptions are made about aikuma EAF file.

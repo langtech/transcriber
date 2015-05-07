@@ -1,5 +1,3 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule datamodel
@@ -8,6 +6,8 @@
 goog.provide('ldc.datamodel.Table');
 goog.require('ldc.event.Signal');
 goog.require('ldc.datamodel.TableUpdateRowEvent');
+
+(function() {
 
 /**
  * Provides an interface for table-like data structure. Allows to add and

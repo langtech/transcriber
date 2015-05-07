@@ -1,5 +1,3 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule aikuma
@@ -7,6 +5,8 @@
  */
 goog.provide('ldc.aikuma.AikumaSegment');
 goog.require('goog.dom');
+
+(function() {
 
 var UI_CLASS = 'segmentedit';
 var UI_TEXT_CLASS = 'segmentedit-textwidget';

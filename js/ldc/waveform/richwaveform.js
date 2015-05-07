@@ -1,5 +1,3 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule waveform
@@ -13,6 +11,8 @@ goog.require('goog.style');
 goog.require('goog.object');
 goog.require('goog.events');
 goog.require('goog.cssom');
+
+(function() {
 
 UNSELECTABLE_CSS_ADDED = false;
 
@@ -57,15 +57,15 @@ ldc.waveform.RichWaveform = function(buffer, canvas, channel, ebus) {
 	goog.dom.appendChild(this.container, canvas);
 
 	if (UNSELECTABLE_CSS_ADDED == false) {
-		goog.cssom.addCssText(" \
-			.unselectable { \
-				-moz-user-select: -moz-none; \
-	    		-khtml-user-select: none; \
-	    		-webkit-user-select: none; \
-	    		-o-user-select: none; \
-	    		user-select: none; \
-	   		} \
-		");
+		goog.cssom.addCssText(
+                    ".unselectable {" +
+		    "-moz-user-select: -moz-none;" +
+	    	    "-khtml-user-select: none;" +
+	    	    "-webkit-user-select: none;" +
+	    	    "-o-user-select: none;" +
+	    	    "user-select: none;" +
+	   	    "}"
+		);
 		UNSELECTABLE_CSS_ADDED = true;
 	}
 

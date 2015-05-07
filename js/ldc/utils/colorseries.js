@@ -1,10 +1,11 @@
-(function() {
 /**
 @module ldc
 @submodule utils
 @namespace utils
 */
 goog.provide('ldc.utils.ColorSeries');
+
+(function() {
 
 /**
 Generates a series of distinct colors.

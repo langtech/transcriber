@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Builds a min.js and a min.css file for the transcriber application.
 # This script depends on the following programs.
@@ -18,7 +18,19 @@
 #
 
 # Build min.js file
-cat bower_components/jquery/jquery.min.js js/ccv/*.js bower_components/q/q.js bower_components/FileSaver/FileSaver.js bower_components/bootstrap/dist/js/bootstrap.min.js > /tmp/dump.js
+js_files=(
+    bower_components/jquery/dist/jquery.min.js
+    js/ccv/*.js bower_components/q/q.js
+    bower_components/FileSaver/FileSaver.js
+    bower_components/bootstrap/dist/js/bootstrap.min.js
+)
+
+:>/tmp/dump.js
+for f in "${js_files[@]}"; do
+    cat $f >> /tmp/dump.js
+    echo >> /tmp/dump.js
+done
+
 ./node_modules/.bin/uglifyjs -o transcriber.min.js /tmp/dump.js
 $(python `dirname $0`/compile.py) >> transcriber.min.js
 rm /tmp/dump.js

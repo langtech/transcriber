@@ -1,5 +1,3 @@
-(function() {
-
 /**
  * @module ldc
  * @submodule aikuma
@@ -7,6 +5,8 @@
  */
 goog.provide('ldc.aikuma.SwimLaneRegionEvent');
 goog.require('ldc.event.Event');
+
+(function() {
 
 /**
  * Signals that a region of a SwimLane has been clicked on.
